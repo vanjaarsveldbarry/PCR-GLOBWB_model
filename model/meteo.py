@@ -38,9 +38,9 @@ from ncConverter import *
 import evaporation.hamonETPFunctions as hamon_et0
 import evaporation.ref_pot_et_penman_monteith as penman_monteith
 import evaporation.shortwave_radiation as sw_rad
-import pyinterp
-import pyinterp.fill
-import pyinterp.backends.xarray
+# import pyinterp
+# import pyinterp.fill
+# import pyinterp.backends.xarray
 
 
 

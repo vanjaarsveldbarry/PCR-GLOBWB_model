@@ -62,3 +62,12 @@ target/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+#nextflow temp files
+.nextflow.log*
+**/*/.nextflow/*
+**/*/work
+
+.claude/
+CLAUDE.md
+

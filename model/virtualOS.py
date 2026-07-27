@@ -74,27 +74,6 @@ max_num_of_tries = 1
 # ~ max_num_of_tries = float("inf")
 
 
-def readUpstreamDischarge(ncFile,\
-                                varName = "automatic" ,
-                                dateInput = None,\
-                                useDoy = None,\
-                                cloneMapFileName  = None,\
-                                LatitudeLongitude = True,\
-                                specificFillValue = None):
-    logger.debug(f'Reading Upstream Discharge: {ncFile}')
-    lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.defined(cloneMapFileName)), np.nan)[0, :]
-    lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.defined(cloneMapFileName)), np.nan)[:, 0])  
-
-    ds = xr.open_dataset(ncFile, chunks='auto', engine='netcdf4')
-    ds = ds.sel(time=dateInput).compute()
-    ds = ds.reindex(lat=lat, lon=lon).sortby('lat', ascending=False)
-    ds = ds.fillna(0.0)
-    cropData = ds.discharge.values
-    outPCR = pcr.numpy2pcr(pcr.Scalar, \
-                regridData2FinerGrid(1,cropData, float(0)), float(0))
-    ds.close()
-    return (outPCR)
-
 def readDownscalingZarr(ncFile,\
                                 dateInput = None,\
                                 useDoy = None,\
@@ -2051,10 +2030,21 @@ def isSameClone(inputMapFileName,cloneMapFileName):
     if yULClone != yULInput: sameClone = False
     return sameClone
 
+def runOrFail(command):
+    process = subprocess.run(command, shell = True, capture_output = True, text = True)
+    if process.returncode != 0:
+        msg  = "\n"
+        msg += "The following command FAILED with exit code "+str(process.returncode)+":"+"\n"
+        msg += str(command)+"\n"
+        msg += str(process.stderr).strip()+"\n"
+        logger.error(msg)
+        raise RuntimeError(msg)
+    return process
+
 def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
     # 19 Mar 2013 created by Edwin H. Sutanudjaja
     # all input maps must be in PCRaster maps
-    # 
+    #
     # remove temporary files:
     co = 'rm '+str(tmpDir)+'*.*'
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
@@ -2063,8 +2053,8 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
     co = 'gdal_translate -ot Float64 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isLddMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isNominalMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
-    # 
+    runOrFail(co)
+    #
     # get the attributes of PCRaster map:
     cloneAtt = getMapAttributesALL(cloneOut)
     xmin = cloneAtt['xUL']
@@ -2076,18 +2066,18 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
     te = '-te '+str(xmin)+' '+str(ymin)+' '+str(xmax)+' '+str(ymax)+' '
     tr = '-tr '+str(xres)+' '+str(yres)+' '
     co = 'gdalwarp '+te+tr+ \
-         ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
+         ' -srcnodata -3.4028234663852886e+38 '+ \
            str(tmpDir)+'tmp_inp.tif '+ \
            str(tmpDir)+'tmp_out.tif'
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
-    # 
+    runOrFail(co)
+    #
     co = 'gdal_translate -of PCRaster '+ \
               str(tmpDir)+'tmp_out.tif '+str(output)
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
-    # 
+    runOrFail(co)
+    #
     co = 'mapattr -c '+str(cloneOut)+' '+str(output)
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
-    # 
+    runOrFail(co)
+    #
     #~ co = 'aguila '+str(output)
     #~ print(co)
     #~ cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()

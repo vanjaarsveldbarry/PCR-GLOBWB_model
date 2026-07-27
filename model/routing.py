@@ -36,10 +36,13 @@ import pcraster as pcr
 import logging
 logger = logging.getLogger(__name__)
 
+import numpy as np
+
 import virtualOS as vos
 from ncConverter import *
 
 import waterBodies
+import upstream_discharge
 
 class Routing(object):
     
@@ -325,14 +328,82 @@ class Routing(object):
             self.maxFloodDepth = vos.readPCRmapClone(iniItems.routingOptions['maxFloodDepth'], self.cloneMap, self.tmpDir, self.inputDir)
         
 
-        # input file for upstrem discharge (from upstream basins)
-        self.upstream_discharge_input_files = None
-        if "upstream_discharge_input_files" in list(iniItems.routingOptions.keys()) and iniItems.routingOptions["upstream_discharge_input_files"] != "None":
-            self.upstream_discharge_input_files = iniItems.routingOptions["upstream_discharge_input_files"].split(",")
-        
+        # sub-basin cascade: discharge handed over at the cells where flow leaves a
+        # sub-basin, as a small binary.
+        self.set_upstream_discharge_output(iniItems)
+        self.set_upstream_discharge_input(iniItems)
 
-        # initiate old style reporting                                  # This is still very useful during the 'debugging' process. 
+
+        # initiate old style reporting                                  # This is still very useful during the 'debugging' process.
         self.initiate_old_style_routing_reporting(iniItems)
+
+    def set_upstream_discharge_output(self, iniItems):
+        """Find the cells where flow leaves this sub-basin and open the writer for them.
+
+        pcr.lddmask (applied above) turns every cell whose downstream neighbour falls
+        outside the landmask into a pit, so 'lddMap == 5' marks exactly the mask exits --
+        the same idiom used for outgoing_volume_at_pits. Cells that are pits in
+        ldd_complete as well are genuine endorheic sinks: they drain nowhere, so they hand
+        nothing on and are excluded. A terminal sub-basin therefore exports no points.
+        """
+        self.upstream_discharge_writer = None
+        if "upstream_discharge_output_file" not in list(iniItems.routingOptions.keys()):
+            return
+        output_file = iniItems.routingOptions["upstream_discharge_output_file"]
+        if output_file == "None":
+            return
+        # the model chdirs into <outputDir>/maps, so a handover path has to anchor on the
+        # directory the run was launched from -- that is what lets a workflow engine stage
+        # the upstream files into a task directory and collect this run's file there too
+        output_file = iniItems.make_absolute_path(output_file)
+
+        masked_ldd   = pcr.pcr2numpy(pcr.scalar(self.lddMap)      , np.nan)
+        complete_ldd = pcr.pcr2numpy(pcr.scalar(self.ldd_complete), np.nan)
+        self.outlet_rows, self.outlet_cols = np.where((masked_ldd == 5.) & (complete_ldd != 5.))
+
+        # cell centre coordinates of this clone: latitudes north to south, i.e. in row order
+        everywhere = pcr.spatial(pcr.boolean(1))
+        latitudes  = pcr.pcr2numpy(pcr.ycoordinate(everywhere), np.nan)[:, 0]
+        longitudes = pcr.pcr2numpy(pcr.xcoordinate(everywhere), np.nan)[0, :]
+        self.upstream_discharge_writer = upstream_discharge.DischargeWriter(
+                                             output_file,
+                                             latitudes[self.outlet_rows],
+                                             longitudes[self.outlet_cols],
+                                             iniItems.globalOptions['startTime'])
+        logger.info("Handing over discharge at %d outlet cell(s) via %s"
+                    % (len(self.outlet_rows), output_file))
+
+    def set_upstream_discharge_input(self, iniItems):
+        """Attach to every upstream sub-basin's outlet discharge stream.
+
+        The upstream runs are usually still going: sub-basins run concurrently and each
+        one waits only for its upstreams to publish the day it is currently on. So this
+        blocks until those files carry a header, and each timestep blocks until that day's
+        record is there.
+        """
+        self.upstream_inflow = None
+        if "upstream_discharge_input_files" not in list(iniItems.routingOptions.keys()):
+            return
+        setting = iniItems.routingOptions["upstream_discharge_input_files"]
+        if setting == "None":
+            return
+        paths = [iniItems.make_absolute_path(path.strip())
+                 for path in setting.split(",") if path.strip() != ""]
+        if len(paths) == 0:
+            return
+
+        timeout = upstream_discharge.DEFAULT_TIMEOUT
+        if "upstream_discharge_timeout" in list(iniItems.routingOptions.keys()):
+            timeout = float(iniItems.routingOptions["upstream_discharge_timeout"])
+
+        logger.info("Waiting for upstream discharge from %d file(s): %s"
+                    % (len(paths), ", ".join(paths)))
+        everywhere = pcr.spatial(pcr.boolean(1))
+        latitudes  = pcr.pcr2numpy(pcr.ycoordinate(everywhere), np.nan)[:, 0]
+        longitudes = pcr.pcr2numpy(pcr.xcoordinate(everywhere), np.nan)[0, :]
+        self.upstream_inflow = upstream_discharge.InflowCollection(
+                                   paths, latitudes, longitudes, timeout = timeout)
+        logger.info("Upstream discharge streams attached.")
 
     def getICs(self,iniItems,iniConditions = None):
 
@@ -417,10 +488,6 @@ class Routing(object):
         if self.waterBodyStorage is not None:
             self.waterBodyStorage = pcr.ifthen(self.landmask, pcr.cover(self.waterBodyStorage, 0.0))
 
-
-
-            
-            
 
     def estimateBankfullDischarge(self, bankfullWidth, factor = 4.8):
 
@@ -923,6 +990,13 @@ class Routing(object):
                                        pcr.ifthen(self.lddMap == pcr.ldd(5), self.Q), 0.0))
         # TODO: accumulate water in endorheic basins that are considered as lakes/reservoirs
 
+        # hand today's outlet discharge to the downstream sub-basin. Here rather than in
+        # simple_update so that every routing method is covered.
+        if self.upstream_discharge_writer is not None:
+            discharge_field = pcr.pcr2numpy(self.discharge, np.nan)
+            self.upstream_discharge_writer.append(
+                                     discharge_field[self.outlet_rows, self.outlet_cols])
+
         if self.floodPlain:
             # riverine flood volume (m3)
             # - assume/simplify that lakes/reservoir cells never flooded
@@ -1095,16 +1169,13 @@ class Routing(object):
         # UNTIL THIS PART - CONTINUE FROM THIS
         
         # upstream discharge, unit: m3.s-1
+        # - the upstream sub-basins' outlet values for today, already in memory; zero
+        #   everywhere else. Only the outlet cells can survive the pcr.upstream below.
         total_upstream_discharge = pcr.spatial(pcr.scalar(0.0))
-        if self.upstream_discharge_input_files is not None:
-            for i_ups_file in range(0, len(self.upstream_discharge_input_files)):
-                upstream_discharge_input_file = self.upstream_discharge_input_files[i_ups_file]
-                self.upstream_discharge  = vos.readUpstreamDischarge(\
-                                                            upstream_discharge_input_file, "automatic",\
-                                                            str(currTimeStep.fulldate),
-                                                            cloneMapFileName=self.cloneMap,
-                                                            useDoy = None)
-                total_upstream_discharge = total_upstream_discharge + pcr.cover(self.upstream_discharge, 0.0)
+        if self.upstream_inflow is not None:
+            inflow_field = self.upstream_inflow.field_for(currTimeStep.currTime)
+            self.upstream_discharge = pcr.numpy2pcr(pcr.Scalar, inflow_field, np.nan)
+            total_upstream_discharge = total_upstream_discharge + self.upstream_discharge
         # - put the upstream discharge into the current calculate basin
         total_upstream_discharge = pcr.upstream(self.ldd_complete, total_upstream_discharge)
         # - consider only values within the landmask

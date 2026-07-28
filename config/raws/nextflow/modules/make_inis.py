@@ -33,9 +33,9 @@ for row in rows:
     ini["globalOptions"]["landmask"] = mask
     ini["reportingOptions"]["landmask_for_reporting"] = mask
     ini["routingOptions"]["upstream_discharge_output_file"] = os.path.join(
-        outdir, name, "%s.bin" % name)
+        outdir, name, "states", "%s.bin" % name)
     ini["routingOptions"]["upstream_discharge_input_files"] = ",".join(
-        os.path.join(outdir, up, "%s.bin" % up) for up in inflow) or "None"
+        os.path.join(outdir, up, "states", "%s.bin" % up) for up in inflow) or "None"
     ini["routingOptions"]["upstream_discharge_timeout"] = args.upstream_timeout
 
     with open("%s.ini" % name, "w") as handle:

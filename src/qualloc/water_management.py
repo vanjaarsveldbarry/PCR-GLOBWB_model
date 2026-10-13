@@ -290,8 +290,6 @@ total_return_flow_ini                      : total return flow [m3/day]
         landmask,
         cellarea,
         time_increment,
-        time_step,
-        time_step_length,
         desalwater_allocation_zones,
         desalwater_withdrawal_points,
         groundwater_allocation_zones,
@@ -366,8 +364,6 @@ total_return_flow_ini                      : total return flow [m3/day]
         # settings to allocate demand to the availability (hard-coded, refer to the allocation functions);
         # time increment for updating the withdrawals from the long-term availability (monthly or yearly)
         self.time_increment = time_increment
-        self.time_step = time_step
-        self.time_step_length = time_step_length
 
         # use_local_first: boolean map indicating whether the local availability is used first; the flag
         # gives its overall setting for logging
@@ -810,7 +806,6 @@ total_return_flow_ini                      : total return flow [m3/day]
         regional_pumping_limit,
         region_ids,
         region_ratios,
-        time_step_length,
         date,
     ):
         """
@@ -827,7 +822,6 @@ total_return_flow_ini                      : total return flow [m3/day]
         region_ids             : PCRaster map with regional ID (units: nominal)
         region_ratio           : PCRaster map with scalar values that scale the actual
                                  pumping capacity comprised within the land mask (units: m3/m3)
-        time_step_length       : integer, number of days in a period (e.g., 30 days/month)
         date                   : string, date of the update
         """
 
@@ -860,9 +854,7 @@ total_return_flow_ini                      : total return flow [m3/day]
         )
 
         # withdrawal capacity (m3/day)
-        withdrawal_capacity = (
-            regional_pumping_limit * withdrawal_rate / (12 * time_step_length)
-        )
+        withdrawal_capacity = regional_pumping_limit * withdrawal_rate / 12
         if source_name == "groundwater":
             self.groundwater_withdrawal_capacity = pcr.ifthen(
                 self.landmask, pcr.cover(withdrawal_capacity, 0.0)
@@ -2489,7 +2481,6 @@ total_return_flow_ini                      : total return flow [m3/day]
         self,
         groundwater_available,
         longterm_potential_withdrawal_per_sector,
-        time_step_length,
     ):
         """
         update_groundwater_potential_withdrawals:
@@ -2507,7 +2498,6 @@ total_return_flow_ini                      : total return flow [m3/day]
                                              with sum of renewable and non-renewable potential withdrawals per
                                              sector obtained considering long-term water quality as values
                                              (units: m3/day)
-        time_step_length                   : integer, number of days in period (e.g., 30 days/month)
 
         output:
         ======
@@ -2535,8 +2525,7 @@ total_return_flow_ini                      : total return flow [m3/day]
             (
                 sector_name,
                 longterm_potential_withdrawal_per_sector[sector_name]
-                * suitability_per_sector[sector_name]
-                * time_step_length,
+                * suitability_per_sector[sector_name],
             )
             for sector_name in self.sector_names
         )
@@ -3036,11 +3025,9 @@ total_return_flow_ini                      : total return flow [m3/day]
         self.average_surfacewater_runoff += surfacewater_runoff
 
         # update the long-term variables on the last day of the month
-        if (self.time_step == "monthly") or (
-            self.time_step == "daily" and is_last_day_month(date)
-        ):
+        if is_last_day_month(date):
 
-            # number of steps within the time step: days in the month for daily time steps, one for monthly
+            # number of days in the month
             steps = date.day
 
             update_date = datetime.datetime(date.year, date.month, 1)
@@ -3150,11 +3137,9 @@ total_return_flow_ini                      : total return flow [m3/day]
             )
 
         # update the long-term variables on the last day of the month
-        if (self.time_step == "monthly") or (
-            self.time_step == "daily" and is_last_day_month(date)
-        ):
+        if is_last_day_month(date):
 
-            # number of steps within the time step: days in the month for daily time steps, one for monthly
+            # number of days in the month
             steps = date.day
 
             for sector_name in self.sector_names:
@@ -3210,9 +3195,7 @@ total_return_flow_ini                      : total return flow [m3/day]
         """
 
         # update the long-term variables on the last day of the month
-        if (self.time_step == "monthly") or (
-            self.time_step == "daily" and is_last_day_month(date)
-        ):
+        if is_last_day_month(date):
 
             # groundwater
             if self.pumping_capacity_flag["groundwater"]:

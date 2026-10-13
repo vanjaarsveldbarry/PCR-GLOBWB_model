@@ -380,10 +380,9 @@ class LandSurface(object):
                 replacements=replacements,
             )
 
-            time_increment = "daily"
             startyear = int(self.qualloc_model_configuration.time["startyear"])
             endyear = int(self.qualloc_model_configuration.time["endyear"])
-            self.qualloc_model_time = model_time(startyear, endyear, time_increment)
+            self.qualloc_model_time = model_time(startyear, endyear)
 
             self.qualloc_model = qualloc_model(
                 self.qualloc_model_configuration,

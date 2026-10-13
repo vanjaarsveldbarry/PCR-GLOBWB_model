@@ -128,7 +128,6 @@ class qualloc_model(object):
         ]
 
         self.model_time = model_time
-        self.time_step = self.model_time.time_increment
 
         self.model_configuration.clone_attributes = cloneAttributes()
 
@@ -146,15 +145,11 @@ class qualloc_model(object):
         )
         logger.info(message_str)
 
-        message_str = (
-            "run started at %s for %s over %s - %s using %s time increments"
-            % (
-                self.model_configuration._timestamp_str,
-                self.model_configuration.general["scenarioname"],
-                self.model_time.date,
-                self.model_time.enddate,
-                self.model_time.time_increment,
-            )
+        message_str = "run started at %s for %s over %s - %s" % (
+            self.model_configuration._timestamp_str,
+            self.model_configuration.general["scenarioname"],
+            self.model_time.date,
+            self.model_time.enddate,
         )
         logger.info(message_str)
 
@@ -640,8 +635,6 @@ class qualloc_model(object):
             landmask=self.landmask,
             cellarea=self.cellarea,
             time_increment=self.model_configuration.water_management["time_increment"],
-            time_step=self.model_time.time_increment,
-            time_step_length=self.model_time.time_step_length,
             desalwater_allocation_zones=desalwater_allocation_zones,
             desalwater_withdrawal_points=desalwater_withdrawal_points,
             groundwater_allocation_zones=groundwater_allocation_zones,
@@ -1161,7 +1154,6 @@ class qualloc_model(object):
                             ],
                             region_ids=regional_pumping_capacity["region_ids"],
                             region_ratios=regional_pumping_capacity["region_ratios"],
-                            time_step_length=self.model_time.time_step_length,
                             date=date,
                         )
                     logger.info(
@@ -1342,7 +1334,6 @@ class qualloc_model(object):
             self.water_management.update_groundwater_potential_withdrawals(
                 groundwater_available=groundwater_available,
                 longterm_potential_withdrawal_per_sector=potential_withdrawal_per_sector,
-                time_step_length=self.model_time.time_step_length,
             )
         )
 
@@ -1354,9 +1345,6 @@ class qualloc_model(object):
         nonrenewable_withdrawal = pcr.max(
             0, potential_withdrawal - renewable_withdrawal
         )
-
-        renewable_withdrawal /= self.model_time.time_step_length
-        nonrenewable_withdrawal /= self.model_time.time_step_length
 
         # groundwater storage for the current date
         self.groundwater.storage = deepcopy(groundwater_storage)
@@ -1432,7 +1420,6 @@ class qualloc_model(object):
         # long-term water quality (degC, mg/L, cfu/100mL)
         self.water_management.water_quality.update_longterm_quality(
             source_names=self.water_management.source_names,
-            time_step=self.model_time.time_increment,
             date=date,
         )
 

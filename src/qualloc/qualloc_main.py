@@ -36,26 +36,23 @@ logger = logging.getLogger(__name__)
 
 NoneType = type(None)
 
-# default forcing variables
-forcing_variables = {
-    "precipitation": "precipitation",
-    "referencePotET": "refpot_evaporation",
-    "groundwater_recharge": "groundwater_recharge",
-    "direct_runoff": "direct_runoff",
-    "interflow": "interflow",
-    "irrigationGrossDemand": "irrigation_water_demand",
-    "domesticGrossDemand": "domestic_water_demand",
-    "domesticNettoDemand": "domestic_water_demand",
-    "industryGrossDemand": "industrial_water_demand",
-    "industryNettoDemand": "industrial_water_demand",
-    "livestockGrossDemand": "livestock_water_demand",
-    "livestockNettoDemand": "livestock_water_demand",
-    "manufactureGrossDemand": "manufacture_water_demand",
-    "manufactureNettoDemand": "manufacture_water_demand",
-    "thermoelectricGrossDemand": "thermoelectric_water_demand",
-    "thermoelectricNettoDemand": "thermoelectric_water_demand",
-    "environmentGrossDemand": "environment_water_demand",
-}
+# what PCR-GLOBWB hands over every time step; the names are those of the arguments
+# of qualloc_model.update, which looks them up by name
+forcing_variables = [
+    "groundwater_recharge",
+    "irrigationGrossDemand",
+    "domesticGrossDemand",
+    "domesticNettoDemand",
+    "industryGrossDemand",
+    "industryNettoDemand",
+    "livestockGrossDemand",
+    "livestockNettoDemand",
+    "manufactureGrossDemand",
+    "manufactureNettoDemand",
+    "thermoelectricGrossDemand",
+    "thermoelectricNettoDemand",
+    "environmentGrossDemand",
+]
 
 
 def ncvariable_name(section, key, default=None):
@@ -241,64 +238,6 @@ class qualloc_model(object):
         self.report_initial_conditions_to_file = qualloc_report_initial_conditions(
             self.model_configuration, self.initial_conditions, self.model_flags
         )
-
-        # forcing: all dynamic input for the selected time step
-        inputpath = self.model_configuration.general["inputpath"]
-        allow_year_substitution = True
-        date_selection_method = "exact"
-        datatype = pcr.Scalar
-
-        # totals and rates
-        forcing_totals = self.model_configuration.convert_string_to_input(
-            self.model_configuration.forcing["totals"], str
-        )
-        forcing_rates = self.model_configuration.convert_string_to_input(
-            self.model_configuration.forcing["rates"], str
-        )
-
-        # remove unused forcing variables (sectors)
-        del_keys = []
-        for forcing_variable, ncfileroot in forcing_variables.items():
-            if f"{ncfileroot}_ncfile" not in self.model_configuration.forcing.keys():
-                del_keys.append(forcing_variable)
-        for del_key in del_keys:
-            forcing_variables.pop(del_key, None)
-
-        # coupled QUAlloc
-        if self.online_coupling:
-            del_keys = ["precipitation", "referencePotET", "direct_runoff", "interflow"]
-            for del_key in del_keys:
-                if del_key in forcing_variables.keys():
-                    forcing_variables.pop(del_key, None)
-
-        self.forcing_info = {}
-        for forcing_variable, ncfileroot in forcing_variables.items():
-
-            # netCDF file name and the variable it holds
-            ncfilename = self.model_configuration.forcing["%s_ncfile" % ncfileroot]
-            ncvariable = ncvariable_name(
-                self.model_configuration.forcing, ncfileroot, forcing_variable
-            )
-
-            # type of variable
-            if ncfileroot in forcing_totals:
-                total_to_rate = True
-            elif ncfileroot in forcing_rates:
-                total_to_rate = False
-            else:
-                total_to_rate = False
-
-            self.forcing_info[forcing_variable] = {
-                "ncfilename": ncfilename,
-                "ncvariable": ncvariable,
-                "inputpath": inputpath,
-                "datatype": datatype,
-                "date_selection_method": date_selection_method,
-                "allow_year_substitution": allow_year_substitution,
-                "total_to_rate": total_to_rate,
-            }
-
-        logger.info("forcing information initialized")
 
         # groundwater; stand-alone QUAlloc: read the groundwater alpha
         self.initial_conditions["groundwater"]["groundwater_storage"] = pcr.ifthen(
@@ -856,7 +795,7 @@ class qualloc_model(object):
         self.gross_demand_forcing_vars = {}
         self.net_demand_forcing_vars = {}
 
-        for forcing_variable in forcing_variables.keys():
+        for forcing_variable in forcing_variables:
             for sector_name in self.water_management.sector_names:
                 for demand_name_root in ["%s_gross_demand", "%sgrossdemand"]:
                     if forcing_variable.lower() == (demand_name_root % sector_name):
@@ -887,6 +826,17 @@ class qualloc_model(object):
                 self.gross_demand_forcing_vars[sector_name] = (
                     self.net_demand_forcing_vars[sector_name]
                 )
+
+        # only the demands of the sectors in use are taken from PCR-GLOBWB
+        demand_forcing_vars = set(self.gross_demand_forcing_vars.values()) | set(
+            self.net_demand_forcing_vars.values()
+        )
+        self.forcing_variables = [
+            forcing_variable
+            for forcing_variable in forcing_variables
+            if forcing_variable == "groundwater_recharge"
+            or forcing_variable.lower() in demand_forcing_vars
+        ]
 
         message_str = (
             "Water demand per sector is associated to the following forcing variables:"
@@ -1108,54 +1058,19 @@ class qualloc_model(object):
 
         date = self.model_time.date
 
-        # forcing: hydrology; stand-alone QUAlloc
-        if not online_coupling_to_quantity:
-            for forcing_variable in forcing_variables.keys():
+        # forcing from PCR-GLOBWB, in m/day
+        for forcing_variable in self.forcing_variables:
+            var_out = eval(forcing_variable)
 
-                var_out = read_file_entry(
-                    filename=self.forcing_info[forcing_variable]["ncfilename"],
-                    variablename=self.forcing_info[forcing_variable]["ncvariable"],
-                    inputpath=self.forcing_info[forcing_variable]["inputpath"],
-                    clone_attributes=self.model_configuration.clone_attributes,
-                    datatype=self.forcing_info[forcing_variable]["datatype"],
-                    date=date,
-                    date_selection_method=self.forcing_info[forcing_variable][
-                        "date_selection_method"
-                    ],
-                    allow_year_substitution=self.forcing_info[forcing_variable][
-                        "allow_year_substitution"
-                    ],
-                )
+            # clip to the land mask
+            var_out = pcr.ifthen(self.landmask, pcr.cover(var_out, 0))
 
-                # clip to the land mask
-                var_out = pcr.ifthen(self.landmask, pcr.cover(var_out, 0))
+            setattr(self, forcing_variable.lower(), var_out)
 
-                # convert totals to rates (m/month to m/day); by default, precipitation, referencePotET,
-                # groundwater_recharge, direct_runoff, interflow and irrigation are in m/month and the domestic,
-                # industry, livestock, manufacture, thermoelectric and environment demands in m/day
-                if self.forcing_info[forcing_variable]["total_to_rate"]:
-                    var_out = var_out / self.model_time.time_step_length
-
-                setattr(self, forcing_variable.lower(), var_out)
-
-                logger.debug(
-                    "information on %s read for %s" % (forcing_variable.lower(), date)
-                )
-
-        # coupled QUAlloc (PCR-GLOBWB): forcing variables in m/day
-        else:
-            for forcing_variable in forcing_variables.keys():
-                var_out = eval(forcing_variable)
-
-                # clip to the land mask
-                var_out = pcr.ifthen(self.landmask, pcr.cover(var_out, 0))
-
-                setattr(self, forcing_variable.lower(), var_out)
-
-                logger.debug(
-                    "information on %s imported from PCR-GLOBWB2 for %s"
-                    % (forcing_variable.lower(), date)
-                )
+            logger.debug(
+                "information on %s imported from PCR-GLOBWB2 for %s"
+                % (forcing_variable.lower(), date)
+            )
 
         # forcing: water quality
         constituent_shortterm_quality = {}

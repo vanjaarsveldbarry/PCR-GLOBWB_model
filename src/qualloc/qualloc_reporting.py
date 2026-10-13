@@ -462,7 +462,7 @@ class qualloc_reporting(object):
     def update_reportable_variables(self, model):
 
         # update all reportable variables; forcing variables in m water slice per time step
-        for forcing_variable, info in model.forcing_info.items():
+        for forcing_variable in model.forcing_variables:
             setattr(
                 self,
                 forcing_variable.lower() + "forcing",

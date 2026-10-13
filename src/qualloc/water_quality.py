@@ -11,20 +11,6 @@ from qualloc.model_time import (
     match_date_by_julian_number,
 )
 
-# water quality constituents: variable name in the configuration file as key and
-# variable name in the netCDF file as value; groundwater variables are None as
-# they are not developed yet
-water_quality_forcing_variables = {
-    "surfacewater_temperature": "waterTemperature",
-    "surfacewater_organic": "organic",
-    "surfacewater_salinity": "salinity",
-    "surfacewater_pathogen": "pathogen",
-    "groundwater_temperature": None,
-    "groundwater_organic": None,
-    "groundwater_salinity": None,
-    "groundwater_pathogen": None,
-}
-
 # small number to avoid division by zero in PCRaster
 very_small_number = 1.0e-12
 

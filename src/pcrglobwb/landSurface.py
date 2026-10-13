@@ -390,6 +390,15 @@ class LandSurface(object):
             )
             self.qualloc_model.initialize()
 
+            if (
+                self.qualloc_model.model_flags["water_quality_flag"]
+                and not self.using_dynqual
+            ):
+                raise RuntimeError(
+                    "QUAlloc has water_quality_flag = True, but takes its water quality from DynQual, "
+                    "which is off: set quality = True in [routingOptions] or water_quality_flag = False."
+                )
+
             self.qualloc_reporting = qualloc_reporting(self.qualloc_model_configuration)
             self.qualloc_reporting.initialize()
 
@@ -1200,7 +1209,6 @@ class LandSurface(object):
                 groundwater_recharge=groundwater.gwRecharge,
                 groundwater_baseflow=groundwater.baseflow,
                 groundwater_storage=groundwater.storGroundwater,
-                online_coupling_to_quality=self.using_dynqual,
                 surfacewater_temperature=surfacewater_temperature,
                 surfacewater_organic=surfacewater_organic,
                 surfacewater_salinity=surfacewater_salinity,

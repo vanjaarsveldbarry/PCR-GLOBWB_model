@@ -27,7 +27,6 @@ from qualloc.water_management import (
 from qualloc.water_quality import (
     unattainable_threshold,
     water_quality,
-    water_quality_forcing_variables,
 )
 
 logger = logging.getLogger(__name__)
@@ -853,40 +852,11 @@ class qualloc_model(object):
                     )
                 )
 
-        # short-term water quality forcing information
-        self.water_quality_forcing_info = {}
-
-        for source_name in self.water_management.source_names:
-            for constituent_name in constituent_names:
-                var = "%s_%s" % (source_name, constituent_name)
-
-                # whether the constituent has short-term water quality data
-                if self.model_flags["water_quality_flag"]:
-                    if var + "_ncfile" in self.model_configuration.water_quality.keys():
-                        ncfilename = self.model_configuration.water_quality[
-                            var + "_ncfile"
-                        ]
-                    else:
-                        ncfilename = "0.0"
-                        message_str = str.join(
-                            "\n",
-                            (
-                                "Concentration values of %s for %s source"
-                                % (constituent_name, source_name),
-                                "were not specified, a value of zero is assigned.",
-                            ),
-                        )
-                        logger.info(message_str)
-
-                # zero concentrations if water quality is not evaluated
-                else:
-                    ncfilename = "0.0"
-
-                self.water_quality_forcing_info[var] = {
-                    "ncfilename": ncfilename,
-                    "ncvariable": water_quality_forcing_variables[var],
-                    "inputpath": self.model_configuration.general["inputpath"],
-                }
+        self.water_quality_forcing_variables = [
+            "%s_%s" % (source_name, constituent_name)
+            for source_name in self.water_management.source_names
+            for constituent_name in constituent_names
+        ]
 
         self.water_quality = water_quality(
             landmask=self.landmask,
@@ -964,7 +934,6 @@ class qualloc_model(object):
         groundwater_recharge=None,
         groundwater_baseflow=None,
         groundwater_storage=None,
-        online_coupling_to_quality=False,
         surfacewater_temperature=None,
         surfacewater_organic=None,
         surfacewater_salinity=None,
@@ -999,45 +968,23 @@ class qualloc_model(object):
             for constituent_name in self.water_quality.constituent_names:
                 key = "%s_%s" % (source_name, constituent_name)
 
-                # value if the dataset is available
+                # value from DynQual
                 if self.model_flags["water_quality_flag"]:
+                    var_out = eval(key)
+                    msg_str = (
+                        "information on %s %s short-term quality imported from DynQual for %s"
+                        % (source_name, constituent_name, date)
+                    )
 
-                    # stand-alone QUAlloc
-                    if not online_coupling_to_quality:
-                        var_out = read_file_entry(
-                            filename=self.water_quality_forcing_info[key]["ncfilename"],
-                            variablename=self.water_quality_forcing_info[key][
-                                "ncvariable"
-                            ],
-                            inputpath=self.water_quality_forcing_info[key]["inputpath"],
-                            clone_attributes=self.model_configuration.clone_attributes,
-                            datatype=pcr.Scalar,
-                            date=date,
-                            date_selection_method="nearest",
-                            allow_year_substitution=False,
-                        )
-                        logger.debug(
-                            "information on %s %s short-term quality read for %s"
-                            % (source_name, constituent_name, date)
-                        )
-
-                    # coupled QUAlloc (DynQual)
-                    else:
-                        var_out = eval(key)
+                    # zeros if the variable is None
+                    if isinstance(var_out, NoneType):
+                        var_out = pcr.spatial(pcr.scalar(0))
                         msg_str = (
-                            "information on %s %s short-term quality imported from DynQual for %s"
+                            "no %s %s short-term quality is given for %s; a value of zero is considered"
                             % (source_name, constituent_name, date)
                         )
 
-                        # zeros if the variable is None
-                        if isinstance(var_out, NoneType):
-                            var_out = pcr.spatial(pcr.scalar(0))
-                            msg_str = (
-                                "no %s %s short-term quality is given for %s; a value of zero is considered"
-                                % (source_name, constituent_name, date)
-                            )
-
-                        logger.debug(msg_str)
+                    logger.debug(msg_str)
 
                 # zero if the dataset is not available
                 else:

@@ -469,7 +469,7 @@ class qualloc_reporting(object):
                 getattr(model, forcing_variable.lower()),
             )
 
-        for forcing_variable, info in model.water_quality_forcing_info.items():
+        for forcing_variable in model.water_quality_forcing_variables:
             setattr(
                 self,
                 forcing_variable.lower() + "forcing",

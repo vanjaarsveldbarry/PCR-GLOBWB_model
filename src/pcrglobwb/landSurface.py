@@ -361,7 +361,6 @@ class LandSurface(object):
                 "water_quality",
             ]
             groups = []
-            subst_args = []
 
             # the placeholders in the QUAlloc cfg are filled from this ini, which run-with-arguments has
             # already substituted with the same values, so both models are driven by one set of arguments
@@ -378,7 +377,6 @@ class LandSurface(object):
                 cfgfilename=qualloc_config_file,
                 sections=sections,
                 groups=groups,
-                subst_args=subst_args,
                 replacements=replacements,
             )
 
@@ -387,17 +385,9 @@ class LandSurface(object):
             endyear = int(self.qualloc_model_configuration.time["endyear"])
             self.qualloc_model_time = model_time(startyear, endyear, time_increment)
 
-            # dummy model flags and initial conditions; initial conditions are read from the configuration
-            # file if None, otherwise the existing warm states are used
-            model_flags = {}
-            initial_conditions = None
-
             self.qualloc_model = qualloc_model(
                 self.qualloc_model_configuration,
                 self.qualloc_model_time,
-                model_flags,
-                initial_conditions,
-                online_coupling=self.using_qualloc,
             )
             self.qualloc_model.initialize()
 
@@ -1192,7 +1182,6 @@ class LandSurface(object):
             # update QUAlloc for the current date
             self.qualloc_model_time.update(currTimeStep.timeStepPCR)
             self.qualloc_model.update(
-                online_coupling_to_quantity=self.using_qualloc,
                 irrigationGrossDemand=vol_gross_sectoral_water_demands["irrigation"]
                 / routing.cellArea,
                 domesticGrossDemand=self.water_demand.water_demand_domestic.domesticGrossDemand,

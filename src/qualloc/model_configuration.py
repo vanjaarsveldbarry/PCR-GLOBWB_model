@@ -54,7 +54,6 @@ the CALEROS model.
         sections=[],
         groups=[],
         debug_mode=False,
-        subst_args=[],
         replacements={},
         **optional_arguments,
     ):
@@ -74,16 +73,11 @@ the CALEROS model.
 
         self.debug_mode = debug_mode
 
-        # save the initial root for later use
-        self.start_root_path = os.path.abspath(os.path.dirname(__file__))
-
         # substitute tokens before parsing so every value is covered, including those
         # in the optional sections and groups
         self.cfg_content = self.substitute_tokens(self.cfgfilename, replacements)
 
-        self.parse_configuration_file(
-            self.cfgfilename, self.groups, self.sections, subst_args
-        )
+        self.parse_configuration_file(self.cfgfilename, self.groups, self.sections)
 
         # the log files live in the output directories, so messages raised while
         # creating them are logged once the logger exists
@@ -148,7 +142,7 @@ the unreplaced token would otherwise surface much later as a missing file.
             lambda match: replacements[match.group(1)], cfg_content
         )
 
-    def parse_configuration_file(self, cfgfilename, groups, sections, subst_args):
+    def parse_configuration_file(self, cfgfilename, groups, sections):
 
         config = ConfigParser()
         config.optionxform = str
@@ -161,14 +155,6 @@ the unreplaced token would otherwise surface much later as a missing file.
                 sections_present.remove(section)
                 try:
                     section_info = self.get_items(config, section)
-                    for key, value in section_info.items():
-                        if "$" in value:
-                            argposcnt = value.find("$")
-                            argpos = int(value[argposcnt + 1 :]) - 1
-                            value = str.join(
-                                "", (value[:argposcnt], subst_args[argpos])
-                            )
-                            section_info[key] = value
                     setattr(self, section, section_info)
                 except Exception:
                     message_str = (
@@ -205,16 +191,6 @@ the unreplaced token would otherwise surface much later as a missing file.
                     section = section.replace(" ", "")
                     # miscellaneous section
                     section_info = self.get_items(config, section)
-                for key, value in section_info.items():
-                    if "$" in value:
-                        try:
-                            value = subst_args[int(value.lstrip("$")) - 1]
-                        except Exception:
-                            message_str = (
-                                "argument substitution failed on %s in optional section %s"
-                                % (key, section)
-                            )
-                        section_info[key] = value
                 setattr(self, section, section_info)
 
             except Exception:

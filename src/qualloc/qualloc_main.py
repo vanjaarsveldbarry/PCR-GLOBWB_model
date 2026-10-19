@@ -789,8 +789,9 @@ class qualloc_model(object):
                 else:
                     limit = None
                     logger.info(
-                        "A threshold value for %s was not specified, an unattainable value of %s is assigned."
-                        % (constituent_name, unattainable_threshold)
+                        "A threshold value for %s was not specified, an unattainable value of %s is assigned.",
+                        constituent_name,
+                        unattainable_threshold,
                     )
 
                 # replace None with an unreachable threshold
@@ -828,8 +829,8 @@ class qualloc_model(object):
                             for date in water_management_dates
                         )
                         logger.info(
-                            "Long-term %s was not specified, a value of zero is assigned."
-                            % constituent_name
+                            "Long-term %s was not specified, a value of zero is assigned.",
+                            constituent_name,
                         )
 
                 # zero concentrations if water quality is not evaluated
@@ -997,8 +998,9 @@ class qualloc_model(object):
             setattr(self, forcing_variable, var_out)
 
             logger.debug(
-                "information on %s imported from PCR-GLOBWB2 for %s"
-                % (forcing_variable, date)
+                "information on %s imported from PCR-GLOBWB2 for %s",
+                forcing_variable,
+                date,
             )
 
         # forcing: water quality
@@ -1027,8 +1029,10 @@ class qualloc_model(object):
                             allow_year_substitution=False,
                         )
                         logger.debug(
-                            "information on %s %s short-term quality read for %s"
-                            % (source_name, constituent_name, date)
+                            "information on %s %s short-term quality read for %s",
+                            source_name,
+                            constituent_name,
+                            date,
                         )
 
                     # coupled QUAlloc (DynQual)
@@ -1053,8 +1057,10 @@ class qualloc_model(object):
                 else:
                     var_out = pcr.spatial(pcr.scalar(0))
                     logger.debug(
-                        "no %s %s short-term quality is given for %s; a value of zero is considered"
-                        % (source_name, constituent_name, date)
+                        "no %s %s short-term quality is given for %s; a value of zero is considered",
+                        source_name,
+                        constituent_name,
+                        date,
                     )
 
                 # cover NaN with zero concentration and clip to the land mask
@@ -1135,8 +1141,9 @@ class qualloc_model(object):
                     )
 
                     logger.debug(
-                        "information on %s regional pumping capacity read for %s"
-                        % (source_name, date)
+                        "information on %s regional pumping capacity read for %s",
+                        source_name,
+                        date,
                     )
 
         # long-term
@@ -1168,8 +1175,9 @@ class qualloc_model(object):
                             date=date,
                         )
                     logger.info(
-                        "Pumping capacity is considered to limit %s withdrawals for %s."
-                        % (date, source_name)
+                        "Pumping capacity is considered to limit %s withdrawals for %s.",
+                        date,
+                        source_name,
                     )
 
             # long-term availability for the date (m3/day)
@@ -1443,8 +1451,8 @@ class qualloc_model(object):
     def finalize_year(self):
 
         logger.info(
-            "last day of year %d: updating water availability, demand and quality"
-            % self.model_time.year
+            "last day of year %d: updating water availability, demand and quality",
+            self.model_time.year,
         )
 
         self.water_management.update_annual_water_availability()

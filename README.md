@@ -18,23 +18,21 @@ Some output files are also provided: https://opendap.4tu.nl/thredds/catalog/data
 
 Please follow the following steps required to install PCR-GLOBWB:
 
- 1. You will need a working Python environment, we recommend to install Miniconda, particularly for Python 3. Follow their instructions given at https://docs.conda.io/en/latest/miniconda.html. The user guide and short reference on conda can be found [here](https://docs.conda.io/projects/conda/en/latest/user-guide/cheatsheet.html).
+ 1. Install [pixi](https://pixi.sh):
 
- 2. Get the requirement or environment file from this repository [conda_env/pcrglobwb_py3.yml](conda_env/pcrglobwb_py3.yml) and use it to install all modules required (e.g. PCRaster, netCDF4) to run PCR-GLOBWB:
+    `curl -fsSL https://pixi.sh/install.sh | sh`
 
-    `conda env create --name pcrglobwb_python3 -f pcrglobwb_py3.yml`
-
-    This will create a environment named *pcrglobwb_python3*.
-
- 3. Activate the environment in a command prompt:
-
-    `conda activate pcrglobwb_python3`
-
- 4. Clone or download this repository. We suggest to use the latest version of the model, which should also be in the default branch. 
+ 2. Clone or download this repository. We suggest to use the latest version of the model, which should also be in the default branch.
 
     `git clone https://github.com/UU-Hydro/PCR-GLOBWB_model.git`
 
     This will clone PCR-GLOBWB into the current working directory.
+
+ 3. From the repository root, install the environment defined in *pixi.toml* and pinned in *pixi.lock* (PCRaster, netCDF4, etc.):
+
+    `pixi install`
+
+    Post-processing tools (cdo, nco) live in a separate *tools* environment: `pixi install -e tools`, then e.g. `pixi run -e tools cdo ...`.
 
 
 ## PCR-GLOBWB configuration .ini file
@@ -54,13 +52,11 @@ This can be adjusted to any (local) locations, e.g. if you have the input files 
 
 ## How to run
 
-Please make sure that the correct conda environment in a command prompt:
+You can start a PCR-GLOBWB run from anywhere using the following command:
 
-`conda activate pcrglobwb_python3`
+`pixi run --manifest-path <repository_root>/pixi.toml python <repository_root>/model/deterministic_runner.py <ini_configuration_file>`
 
-Go to to the PCR-GLOBWB *model* directory. You can start a PCR-GLOBWB run using the following command: 
-
-`python deterministic_runner.py <ini_configuration_file>`
+or, from the repository root, `pixi run python model/deterministic_runner.py <ini_configuration_file>`.
 
 where <ini_configuration_file> is the configuration file of PCR-GLOBWB. 
 

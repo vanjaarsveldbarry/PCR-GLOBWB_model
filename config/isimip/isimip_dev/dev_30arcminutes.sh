@@ -7,14 +7,14 @@ REPO_ROOT="$(cd "$CONFIG_DIR/../../.." && pwd)"
 # ---------------------------------------------------------------------------
 # settings
 # ---------------------------------------------------------------------------
-DATA_CATALOGUE_DIR=/scratch/depfg/7006713/temp/quick_commit/RAWS/RAWS_data_catalogue/CATALOGUE/TEST_CASES/
+DATA_CATALOGUE_DIR=/scratch/depfg/7006713/isimip_data_catalogue/isimip_parameterization/data_catalogue/CATALOGUE/TEST_CASES/
 DATA_DIR="${REPO_ROOT}/../data"
 
 START_DATE=2000-01-01
 END_DATE=2000-01-07
 
 INPUT_DIR="$DATA_DIR/CATALOGUE/TEST_CASES/rhine"
-CLONE_MAP="clone_maps/sub_basins/30arcminutes/rhine_30arcminutes_1_1"
+CLONE_MAP="clone_maps/rhine_30arcminutes"
 
 # ---------------------------------------------------------------------------
 # get data

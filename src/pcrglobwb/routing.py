@@ -85,7 +85,7 @@ class Routing(object):
             # routed FC load (cfu), converted to pathogen pollution (cfu/100mL)
             result["routedFC"] = self.routedFC
 
-            if not self.offlineRun and self.calculateLoads and self.loadsPerSector:
+            if self.calculateLoads and self.loadsPerSector:
                 # pollutants routed per sector (for the analysis of sectoral contributions): domestic
                 # (g TDS)
                 result["routedDomTDS"] = self.routedDomTDS
@@ -573,39 +573,8 @@ class Routing(object):
             # (m/day; Reder et al., 2015)
             self.settlingvelocity_FC = pcr.scalar(1.656)
 
-            # options for offline runs
-            if iniItems.routingOptions["offlineRun"] == "True":
-                self.offlineRun = True
-                logger.info("DynQual running in offline configuration")
-
-                # baseflow, interflow and direct runoff, required for offline DynQual runs
-                self.baseflowNC = vos.getFullPath(
-                    iniItems.routingOptions["baseflowNC"], self.inputDir
-                )
-                self.interflowNC = vos.getFullPath(
-                    iniItems.routingOptions["interflowNC"], self.inputDir
-                )
-                self.directRunoffNC = vos.getFullPath(
-                    iniItems.routingOptions["directRunoffNC"], self.inputDir
-                )
-
-                if iniItems.routingOptions["calculateLoads"] == "True":
-                    logger.info(
-                        "WARNING: Cannot calculate pollutant loadings in offline configuration."
-                    )
-                    logger.info(
-                        "Switch to online configuration or prescribe loadings directly."
-                    )
-
-            else:
-                self.offlineRun = False
-                logger.info("DynQual running online")
-
             # calculate the loadings within the model run
-            if (
-                iniItems.routingOptions["calculateLoads"] == "True"
-                and not self.offlineRun
-            ):
+            if iniItems.routingOptions["calculateLoads"] == "True":
                 self.calculateLoads = True
                 logger.info("Loadings calculated within model run.")
 
@@ -917,7 +886,7 @@ class Routing(object):
                 )
 
                 # initial average irrigation demand and net liquid water to the soil, for the irrigation return flows
-                if self.calculateLoads and not self.offlineRun:
+                if self.calculateLoads:
                     self.avg_irrGrossDemand = vos.readPCRmapClone(
                         iniItems.routingOptions["avg_irrGrossDemandIni"],
                         self.tmpDir,
@@ -1040,7 +1009,7 @@ class Routing(object):
                 self.routedFC = iniConditions["routing"]["routedFC"]
 
                 # initial average irrigation demand and net liquid water to the soil, for the irrigation return flows
-                if self.calculateLoads and not self.offlineRun:
+                if self.calculateLoads:
                     self.avg_irrGrossDemand = iniConditions["routing"][
                         "avg_irrGrossDemand"
                     ]
@@ -1128,7 +1097,7 @@ class Routing(object):
             self.routedFC = pcr.ifthen(self.landmask, pcr.cover(self.routedFC, 0.0))
 
             # per water quality sector
-            if self.calculateLoads and not self.offlineRun:
+            if self.calculateLoads:
                 self.avg_irrGrossDemand = pcr.ifthen(
                     self.landmask, pcr.cover(self.avg_irrGrossDemand, 0.0)
                 )
@@ -2859,10 +2828,10 @@ class Routing(object):
         )
         self.avgBaseflow = pcr.max(0.0, self.avgBaseflow)
 
-        # DynQual: average irrigation water allocated over the last 30 days (needed for online runs where
+        # DynQual: average irrigation water allocated over the last 30 days (needed when
         # loadings are calculated in the loop)
         if self.quality:
-            if self.calculateLoads and not self.offlineRun:
+            if self.calculateLoads:
                 # average irrigation gross demand over the last 30 days
                 irrGrossDemand = deepcopy(landSurface.irrGrossDemand)
                 deltaAno_irrGrossDemand = (

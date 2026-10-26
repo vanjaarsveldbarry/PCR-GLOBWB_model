@@ -42,7 +42,7 @@ MODULES = discover_modules()
 
 class TestImports(unittest.TestCase):
     def test_modules_are_discovered(self) -> None:
-        self.assertLessEqual({"pcrglobwb", "qualloc"}, set(MODULES))
+        self.assertLessEqual({"pcrglobwb", "qualloc", "dynqual"}, set(MODULES))
 
     def test_modules_import_cleanly(self) -> None:
         for module in MODULES:

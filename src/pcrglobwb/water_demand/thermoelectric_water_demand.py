@@ -98,17 +98,25 @@ class ThermoelectricWaterDemand(object):
     def calculate_thermoelectric_water_demand_for_date(self, currTimeStep, routing):
 
         if currTimeStep.doy == 1:
-            self.readPowerplantData(currTimeStep, routing)
+            self.readPowerplantData(currTimeStep)
 
         self.calculatePowerplantDemands(currTimeStep, routing)
 
-    def readPowerplantData(self, currTimeStep, routing):
+    def readPowerplantData(self, currTimeStep):
 
         logger.info("reading in (annual) powerplant data")
 
+        def input_file(key):
+            return vos.getFullPath(self.iniItems.dynqualOptions[key], self.inputDir)
+
+        powerplants_fwNC = input_file("powerplants_fwNC")
+        powerplants_fwfixedNC = input_file("powerplants_fwfixedNC")
+        powerplants_swNC = input_file("powerplants_swNC")
+        TlmaxNC = input_file("TlmaxNC")
+
         # freshwater plants (with a water temperature dependency)
         self.powerplants_fw_capacity = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "capacity",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -117,7 +125,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_ntotal = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "ntotal",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -126,7 +134,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_nelec = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "nelec",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -135,7 +143,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_alpha = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "alpha",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -144,7 +152,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_beta = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "beta",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -153,7 +161,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_omega = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "omega",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -162,7 +170,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_EZ = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "EZ",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -171,7 +179,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_gamma = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "gamma",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -180,7 +188,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_lambda = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "lambda",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -189,7 +197,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fw_ratio = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwNC,
+            powerplants_fwNC,
             "con_ratio",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -200,7 +208,7 @@ class ThermoelectricWaterDemand(object):
 
         # freshwater plants (without a water temperature dependency)
         self.powerplants_fwfixed_capacity = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwfixedNC,
+            powerplants_fwfixedNC,
             "capacity",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -209,7 +217,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fwfixed_q = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwfixedNC,
+            powerplants_fwfixedNC,
             "withdrawals",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -218,7 +226,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_fwfixed_ratio = vos.netcdf2PCRobjClone(
-            routing.powerplants_fwfixedNC,
+            powerplants_fwfixedNC,
             "con_ratio",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -229,7 +237,7 @@ class ThermoelectricWaterDemand(object):
 
         # seawater plants
         self.powerplants_sw_capacity = vos.netcdf2PCRobjClone(
-            routing.powerplants_swNC,
+            powerplants_swNC,
             "capacity",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -238,7 +246,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_sw_q = vos.netcdf2PCRobjClone(
-            routing.powerplants_swNC,
+            powerplants_swNC,
             "withdrawals",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -247,7 +255,7 @@ class ThermoelectricWaterDemand(object):
         )
 
         self.powerplants_sw_ratio = vos.netcdf2PCRobjClone(
-            routing.powerplants_swNC,
+            powerplants_swNC,
             "con_ratio",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -259,7 +267,7 @@ class ThermoelectricWaterDemand(object):
         # power plant demand factors
         self.dTlmax = pcr.scalar(7.0)
         self.Tlmax = vos.netcdf2PCRobjClone(
-            routing.TlmaxNC,
+            TlmaxNC,
             "waterTemperature",
             str(currTimeStep.fulldate),
             useDoy="yearly",
@@ -270,6 +278,8 @@ class ThermoelectricWaterDemand(object):
     def calculatePowerplantDemands(self, currTimeStep, routing):
 
         logger.info("Dynamically estimating (daily) powerplant gross water demands")
+
+        water_quality = routing.water_quality
 
         # freshwater plants with a water temperature dependency (m3/s):
         # minimum demands, only considering dTlmax
@@ -284,14 +294,18 @@ class ThermoelectricWaterDemand(object):
                     * self.powerplants_fw_omega
                     * self.powerplants_fw_EZ
                 )
-                / (routing.densityWater * routing.specificHeatWater * self.dTlmax)
+                / (
+                    water_quality.densityWater
+                    * water_quality.specificHeatWater
+                    * self.dTlmax
+                )
             )
         )
 
         # demands considering the simulated river water temperature:
         # min(Tlmax - triver) with a minimum of 1 (water can always be warmed by at least 1 K)
         self.min_Tlmax_dTlmax = pcr.max(
-            pcr.min(self.Tlmax - routing.waterTemp, self.dTlmax), 1.0
+            pcr.min(self.Tlmax - water_quality.waterTemp, self.dTlmax), 1.0
         )
 
         self.powerplants_fw_q = (
@@ -306,8 +320,8 @@ class ThermoelectricWaterDemand(object):
                     * self.powerplants_fw_EZ
                 )
                 / (
-                    routing.densityWater
-                    * routing.specificHeatWater
+                    water_quality.densityWater
+                    * water_quality.specificHeatWater
                     * self.min_Tlmax_dTlmax
                 )
             )

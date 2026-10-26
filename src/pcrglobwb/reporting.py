@@ -911,110 +911,45 @@ class Reporting(object):
             pcr.cover(self._model.routing.channelStorage, 0.0),
         )
 
-        # DynQual
-        if self._model.routing.quality:
-            # water temperature (K)
-            self.waterTemp = self._model.routing.waterTemp
+        water_quality = self._model.routing.water_quality
+        if water_quality is not None:
+            for name in water_quality.reported_variable_names():
+                setattr(self, name, getattr(water_quality, name))
 
             # water height (m)
             self.waterHeight = self._model.routing.water_height
 
-            # ice thickness (m)
-            self.iceThickness = self._model.routing.iceThickness
-
+            thermoelectric = (
+                self._model.landSurface.water_demand.water_demand_thermoelectric
+            )
             # power plant flows: minimum demands of temperature-dependent technologies (m3/s)
             self.powerplants_fw_qmin = pcr.ifthen(
-                self._model.routing.landmask,
-                self._model.landSurface.water_demand.water_demand_thermoelectric.powerplants_fw_qmin,
+                self._model.routing.landmask, thermoelectric.powerplants_fw_qmin
             )
             # water temperature dependent demands of temperature-dependent technologies (m3/s)
             self.powerplants_fw_q = pcr.ifthen(
-                self._model.routing.landmask,
-                self._model.landSurface.water_demand.water_demand_thermoelectric.powerplants_fw_q,
+                self._model.routing.landmask, thermoelectric.powerplants_fw_q
             )
             # unrouted temperature loadings from power plants (W), temperature-dependent technologies
             self.PowTwload = pcr.ifthen(
-                self._model.routing.landmask, self._model.routing.PowTwload
+                self._model.routing.landmask, water_quality.PowTwload
             )
 
-            # salinity pollution (g)
-            self.TDSload = self._model.routing.TDSload
-            # (g)
-            self.routedTDS = self._model.routing.routedTDS
-            # (mg/L)
-            self.salinity = self._model.routing.salinity
             # (g/s)
             self.TDSflux = pcr.ifthen(
-                self._model.routing.salinity != vos.MV,
+                water_quality.salinity != vos.MV,
                 self.salinity * self._model.routing.disChanWaterBody,
             )
-
-            if self._model.routing.loadsPerSector:
-                # TDS
-                self.Dom_TDSload = self._model.routing.Dom_TDSload
-                self.Man_TDSload = self._model.routing.Man_TDSload
-                self.USR_TDSload = self._model.routing.USR_TDSload
-                self.Irr_TDSload = self._model.routing.Irr_TDSload
-
-                self.routedDomTDS = self._model.routing.routedDomTDS
-                self.routedManTDS = self._model.routing.routedManTDS
-                self.routedUSRTDS = self._model.routing.routedUSRTDS
-                self.routedIrrTDS = self._model.routing.routedIrrTDS
-
-            # organic pollution (g)
-            self.BODload = self._model.routing.BODload
-            # (g)
-            self.routedBOD = self._model.routing.routedBOD
-            # (mg/L)
-            self.organic = self._model.routing.organic
             # (g/s)
             self.BODflux = pcr.ifthen(
-                self._model.routing.organic != vos.MV,
+                water_quality.organic != vos.MV,
                 self.organic * self._model.routing.disChanWaterBody,
             )
-
-            if self._model.routing.loadsPerSector:
-                # BOD
-                self.Dom_BODload = self._model.routing.Dom_BODload
-                self.Man_BODload = self._model.routing.Man_BODload
-                self.USR_BODload = self._model.routing.USR_BODload
-                self.intLiv_BODload = self._model.routing.intLiv_BODload
-                self.extLiv_BODload = self._model.routing.extLiv_BODload
-
-                self.routedDomBOD = self._model.routing.routedDomBOD
-                self.routedManBOD = self._model.routing.routedManBOD
-                self.routedUSRBOD = self._model.routing.routedUSRBOD
-                self.routedintLivBOD = self._model.routing.routedintLivBOD
-                self.routedextLivBOD = self._model.routing.routedextLivBOD
-
-            # dissolved oxygen (mg/L)
-            self.dissolved_oxygen = self._model.routing.dissolved_oxygen
-
-            # pathogen pollution (million cfu)
-            self.FCload = self._model.routing.FCload
-            # (million cfu)
-            self.routedFC = self._model.routing.routedFC
-            # (cfu/100mL)
-            self.pathogen = self._model.routing.pathogen
             # (million cfu/s)
             self.FCflux = pcr.ifthen(
-                self._model.routing.pathogen != vos.MV,
+                water_quality.pathogen != vos.MV,
                 self.pathogen * self._model.routing.disChanWaterBody * 0.01,
             )
-
-            if self._model.routing.loadsPerSector:
-                # FC
-                self.Dom_FCload = self._model.routing.Dom_FCload
-                self.Man_FCload = self._model.routing.Man_FCload
-                self.USR_FCload = self._model.routing.USR_FCload
-                self.intLiv_FCload = self._model.routing.intLiv_FCload
-                self.extLiv_FCload = self._model.routing.extLiv_FCload
-
-                self.routedDomFC = self._model.routing.routedDomFC
-                self.routedManFC = self._model.routing.routedManFC
-                self.routedUSRFC = self._model.routing.routedUSRFC
-                self.routedintLivFC = self._model.routing.routedintLivFC
-                self.routedextLivFC = self._model.routing.routedextLivFC
 
         # examples of reporting variables of certain land cover types (m/day, averaged over the cell area)
         self.precipitation_at_irrigation = pcr.ifthen(

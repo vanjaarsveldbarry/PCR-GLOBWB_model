@@ -416,6 +416,38 @@ class WaterBodies(object):
         self.avgOutflow = pcr.ifthen(self.landmask, self.avgOutflow)
         self.waterBodyStorage = pcr.ifthen(self.landmask, self.waterBodyStorage)
 
+    def return_water_body_storage_to_channel(self, channelStorage):
+
+        # return waterBodyStorage to channelStorage
+        waterBodyStorageTotal = pcr.ifthen(
+            pcr.scalar(self.waterBodyIds) > 0.0,
+            pcr.areaaverage(
+                pcr.ifthen(self.landmask, self.waterBodyStorage),
+                pcr.ifthen(self.landmask, self.waterBodyIds),
+            )
+            + pcr.areatotal(
+                pcr.cover(pcr.ifthen(self.landmask, channelStorage), 0.0),
+                pcr.ifthen(self.landmask, self.waterBodyIds),
+            ),
+        )
+        waterBodyStoragePerCell = (
+            waterBodyStorageTotal
+            * self.cellArea
+            / pcr.areatotal(
+                pcr.cover(self.cellArea, 0.0),
+                pcr.ifthen(self.landmask, self.waterBodyIds),
+            )
+        )
+        # (m3)
+        waterBodyStoragePerCell = pcr.ifthen(
+            pcr.scalar(self.waterBodyIds) > 0.0, waterBodyStoragePerCell
+        )
+        # (m3)
+        channelStorage = pcr.ifthen(
+            self.landmask, pcr.cover(waterBodyStoragePerCell, channelStorage)
+        )
+        return channelStorage
+
     def update(
         self,
         newStorageAtLakeAndReservoirs,

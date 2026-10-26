@@ -300,11 +300,6 @@ class LandSurface(object):
             if iniItems.waterManagementOptions["using_qualloc"] == "True":
                 self.using_qualloc = True
 
-        self.using_dynqual = False
-        if "quality" in iniItems.routingOptions.keys():
-            if iniItems.routingOptions["quality"] == "True":
-                self.using_dynqual = True
-
         # with a historical/dynamic irrigation file (changing every year), we need the fraction over the
         # irrigation area to calculate the irrigation area per irrigation type:
         # totalIrrAreaFrac: fraction of irrigated area (e.g. paddy + non-paddy) over the cell (-), changes if dynamicIrrigationArea
@@ -1157,16 +1152,17 @@ class LandSurface(object):
             surfacewater_organic = None
             surfacewater_salinity = None
             surfacewater_pathogen = None
-            if self.using_dynqual:
-                surfacewater_temperature = routing.waterTemp - 273.15
+            water_quality = routing.water_quality
+            if water_quality is not None:
+                surfacewater_temperature = water_quality.waterTemp - 273.15
                 surfacewater_organic = pcr.ifthen(
-                    routing.organic < vos.MV, routing.organic
+                    water_quality.organic < vos.MV, water_quality.organic
                 )
                 surfacewater_salinity = pcr.ifthen(
-                    routing.salinity < vos.MV, routing.salinity
+                    water_quality.salinity < vos.MV, water_quality.salinity
                 )
                 surfacewater_pathogen = pcr.ifthen(
-                    routing.pathogen < vos.MV, routing.pathogen
+                    water_quality.pathogen < vos.MV, water_quality.pathogen
                 )
 
             # update QUAlloc for the current date
@@ -1191,7 +1187,7 @@ class LandSurface(object):
                 groundwater_recharge=groundwater.gwRecharge,
                 groundwater_baseflow=groundwater.baseflow,
                 groundwater_storage=groundwater.storGroundwater,
-                online_coupling_to_quality=self.using_dynqual,
+                online_coupling_to_quality=water_quality is not None,
                 surfacewater_temperature=surfacewater_temperature,
                 surfacewater_organic=surfacewater_organic,
                 surfacewater_salinity=surfacewater_salinity,

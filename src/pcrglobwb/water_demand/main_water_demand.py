@@ -77,7 +77,7 @@ class WaterDemand(object):
         self.water_demand_livestock.update(currTimeStep)
         self.water_demand_manufacture.update(currTimeStep)
 
-        if routing.quality:
+        if routing.water_quality is not None:
             self.water_demand_thermoelectric.update(
                 currTimeStep, routing=routing, read_file=False
             )

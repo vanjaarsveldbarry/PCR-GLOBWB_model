@@ -140,169 +140,145 @@ class WaterQuality(object):
         # (m/day; Reder et al., 2015)
         self.settlingvelocity_FC = pcr.scalar(1.656)
 
-        # calculate the loadings within the model run
-        if options["calculateLoads"] == "True":
-            self.calculateLoads = True
-            logger.info("Loadings calculated within model run.")
-
-            if options["loadsPerSector"] == "True":
-                self.loadsPerSector = True
-                logger.info("Option to report loads per sector enabled")
-            else:
-                self.loadsPerSector = False
-
-        else:
-            self.calculateLoads = False
-            self.loadsPerSector = False
-            logger.info("Loadings are prescribed (i.e. akin to a forcing) to the model")
-
-        if self.calculateLoads:
-
-            # pollutant loading input data: domestic, gridded annual population at 5 arcmin (Lange & Geiger, 2020)
-
-            self.PopulationNC = vos.getFullPath(options["PopulationNC"], self.inputDir)
-            # average (regional) excretion rates
-            self.Dom_ExcrLoadNC = vos.getFullPath(
-                options["Dom_ExcrLoadNC"], self.inputDir
-            )
-            # (g/capita/day)
-            self.DomTDS_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Dom_ExcrLoadNC, "Dom_Fixed_TDSload"
-            )
-            # (g/capita/day)
-            self.DomBOD_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Dom_ExcrLoadNC, "Dom_Fixed_BODload"
-            )
-            # (cfu/capita/day)
-            self.DomFC_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Dom_ExcrLoadNC, "Dom_Fixed_FCload"
+        if options.get("calculateLoads", "True") != "True":
+            raise ValueError(
+                "calculateLoads = False (prescribed pollutant loadings) is no longer"
+                " supported; DynQual always calculates the loadings."
             )
 
-            # manufacturing: average (regional) effluent concentrations
-            self.Man_EfflConcNC = vos.getFullPath(
-                options["Man_EfflConcNC"], self.inputDir
-            )
-            # (mg/L, i.e. g/m3)
-            self.ManTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Man_EfflConcNC, "Man_Fixed_TDSload"
-            )
-            # (mg/L, i.e. g/m3)
-            self.ManBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Man_EfflConcNC, "Man_Fixed_BODload"
-            )
-            # (cfu/100mL)
-            self.ManFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Man_EfflConcNC, "Man_Fixed_FCload"
-            )
+        self.loadsPerSector = options["loadsPerSector"] == "True"
+        if self.loadsPerSector:
+            logger.info("Option to report loads per sector enabled")
 
-            # urban surface runoff: urban fraction, from 0 (no urban) to 1 (all urban)
-            self.UrbanFractionNC = vos.getFullPath(
-                options["UrbanFractionNC"], self.inputDir
-            )
-            # average (regional) effluent concentrations
-            self.USR_EfflConcNC = vos.getFullPath(
-                options["USR_EfflConcNC"], self.inputDir
-            )
-            # (mg/L, i.e. g/m3)
-            self.USRTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.USR_EfflConcNC, "USR_Fixed_TDSload"
-            )
-            # (mg/L, i.e. g/m3)
-            self.USRBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.USR_EfflConcNC, "USR_Fixed_BODload"
-            )
-            # (cfu/100mL)
-            self.USRFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.USR_EfflConcNC, "USR_Fixed_FCload"
-            )
+        # pollutant loading input data: domestic, gridded annual population at 5 arcmin (Lange & Geiger, 2020)
 
-            # livestock: gridded populations, 2010, 5 arcmin (Gilbert et al., 2018)
-            self.LivPopulationNC = vos.getFullPath(
-                options["LivPopulationNC"], self.inputDir
-            )
-            # average (regional) excretion rates
-            self.Liv_ExcrLoadNC = vos.getFullPath(
-                options["Liv_ExcrLoadNC"], self.inputDir
-            )
-            # (g/stock/day)
-            self.Bufallo_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "bufallo_BODload"
-            )
-            # (g/stock/day)
-            self.Chicken_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "chicken_BODload"
-            )
-            # (g/stock/day)
-            self.Cow_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "cow_BODload"
-            )
-            # (g/stock/day)
-            self.Duck_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "duck_BODload"
-            )
-            # (g/stock/day)
-            self.Goat_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "goat_BODload"
-            )
-            # (g/stock/day)
-            self.Horse_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "horse_BODload"
-            )
-            # (g/stock/day)
-            self.Pig_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "pig_BODload"
-            )
-            # (g/stock/day)
-            self.Sheep_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "sheep_BODload"
-            )
-            # (cfu/stock/day)
-            self.Bufallo_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "bufallo_FCload"
-            )
-            # (cfu/stock/day)
-            self.Chicken_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "chicken_FCload"
-            )
-            # (cfu/stock/day)
-            self.Cow_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "cow_FCload"
-            )
-            # (cfu/stock/day)
-            self.Duck_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "duck_FCload"
-            )
-            # (cfu/stock/day)
-            self.Goat_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "goat_FCload"
-            )
-            # (cfu/stock/day)
-            self.Horse_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "horse_FCload"
-            )
-            # (cfu/stock/day)
-            self.Pig_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "pig_FCload"
-            )
-            # (cfu/stock/day)
-            self.Sheep_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Liv_ExcrLoadNC, "sheep_FCload"
-            )
+        self.PopulationNC = vos.getFullPath(options["PopulationNC"], self.inputDir)
+        # average (regional) excretion rates
+        self.Dom_ExcrLoadNC = vos.getFullPath(options["Dom_ExcrLoadNC"], self.inputDir)
+        # (g/capita/day)
+        self.DomTDS_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Dom_ExcrLoadNC, "Dom_Fixed_TDSload"
+        )
+        # (g/capita/day)
+        self.DomBOD_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Dom_ExcrLoadNC, "Dom_Fixed_BODload"
+        )
+        # (cfu/capita/day)
+        self.DomFC_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Dom_ExcrLoadNC, "Dom_Fixed_FCload"
+        )
 
-            # irrigation: soil concentration averaged over the topsoil and subsoil
-            self.Irr_EfflConcNC = vos.getFullPath(
-                options["Irr_EfflConcNC"], self.inputDir
-            )
-            # (mg/L)
-            self.IrrTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                self.Irr_EfflConcNC, "soil_TDS"
-            )
+        # manufacturing: average (regional) effluent concentrations
+        self.Man_EfflConcNC = vos.getFullPath(options["Man_EfflConcNC"], self.inputDir)
+        # (mg/L, i.e. g/m3)
+        self.ManTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Man_EfflConcNC, "Man_Fixed_TDSload"
+        )
+        # (mg/L, i.e. g/m3)
+        self.ManBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Man_EfflConcNC, "Man_Fixed_BODload"
+        )
+        # (cfu/100mL)
+        self.ManFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Man_EfflConcNC, "Man_Fixed_FCload"
+        )
 
-        else:
-            # paths to (non-natural) TDS, BOD and FC loading inputs
-            self.TDSloadNC = vos.getFullPath(options["TDSloadNC"], self.inputDir)
-            self.BODloadNC = vos.getFullPath(options["BODloadNC"], self.inputDir)
-            self.FCloadNC = vos.getFullPath(options["FCloadNC"], self.inputDir)
+        # urban surface runoff: urban fraction, from 0 (no urban) to 1 (all urban)
+        self.UrbanFractionNC = vos.getFullPath(
+            options["UrbanFractionNC"], self.inputDir
+        )
+        # average (regional) effluent concentrations
+        self.USR_EfflConcNC = vos.getFullPath(options["USR_EfflConcNC"], self.inputDir)
+        # (mg/L, i.e. g/m3)
+        self.USRTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.USR_EfflConcNC, "USR_Fixed_TDSload"
+        )
+        # (mg/L, i.e. g/m3)
+        self.USRBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.USR_EfflConcNC, "USR_Fixed_BODload"
+        )
+        # (cfu/100mL)
+        self.USRFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.USR_EfflConcNC, "USR_Fixed_FCload"
+        )
+
+        # livestock: gridded populations, 2010, 5 arcmin (Gilbert et al., 2018)
+        self.LivPopulationNC = vos.getFullPath(
+            options["LivPopulationNC"], self.inputDir
+        )
+        # average (regional) excretion rates
+        self.Liv_ExcrLoadNC = vos.getFullPath(options["Liv_ExcrLoadNC"], self.inputDir)
+        # (g/stock/day)
+        self.Bufallo_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "bufallo_BODload"
+        )
+        # (g/stock/day)
+        self.Chicken_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "chicken_BODload"
+        )
+        # (g/stock/day)
+        self.Cow_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "cow_BODload"
+        )
+        # (g/stock/day)
+        self.Duck_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "duck_BODload"
+        )
+        # (g/stock/day)
+        self.Goat_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "goat_BODload"
+        )
+        # (g/stock/day)
+        self.Horse_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "horse_BODload"
+        )
+        # (g/stock/day)
+        self.Pig_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "pig_BODload"
+        )
+        # (g/stock/day)
+        self.Sheep_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "sheep_BODload"
+        )
+        # (cfu/stock/day)
+        self.Bufallo_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "bufallo_FCload"
+        )
+        # (cfu/stock/day)
+        self.Chicken_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "chicken_FCload"
+        )
+        # (cfu/stock/day)
+        self.Cow_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "cow_FCload"
+        )
+        # (cfu/stock/day)
+        self.Duck_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "duck_FCload"
+        )
+        # (cfu/stock/day)
+        self.Goat_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "goat_FCload"
+        )
+        # (cfu/stock/day)
+        self.Horse_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "horse_FCload"
+        )
+        # (cfu/stock/day)
+        self.Pig_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "pig_FCload"
+        )
+        # (cfu/stock/day)
+        self.Sheep_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Liv_ExcrLoadNC, "sheep_FCload"
+        )
+
+        # irrigation: soil concentration averaged over the topsoil and subsoil
+        self.Irr_EfflConcNC = vos.getFullPath(options["Irr_EfflConcNC"], self.inputDir)
+        # (mg/L)
+        self.IrrTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+            self.Irr_EfflConcNC, "soil_TDS"
+        )
 
         self.getICs(options, initialConditions, channelStorage, initialWaterHeight)
 
@@ -315,11 +291,10 @@ class WaterQuality(object):
             result["organic"] = self.organic
             # FC concentration (cfu/100mL)
             result["pathogen"] = self.pathogen
-        if self.calculateLoads:
-            # average irrigation gross demand (m/day)
-            result["avg_irrGrossDemand"] = self.avg_irrGrossDemand
-            # average net liquid water transferred to the soil (m/day)
-            result["avg_netLqWaterToSoil"] = self.avg_netLqWaterToSoil
+        # average irrigation gross demand (m/day)
+        result["avg_irrGrossDemand"] = self.avg_irrGrossDemand
+        # average net liquid water transferred to the soil (m/day)
+        result["avg_netLqWaterToSoil"] = self.avg_netLqWaterToSoil
         # water temperature (K)
         result["waterTemperature"] = self.waterTemp
         # ice thickness (m)
@@ -331,7 +306,7 @@ class WaterQuality(object):
         # routed FC load (cfu), converted to pathogen pollution (cfu/100mL)
         result["routedFC"] = self.routedFC
 
-        if self.calculateLoads and self.loadsPerSector:
+        if self.loadsPerSector:
             # pollutants routed per sector (for the analysis of sectoral contributions): domestic
             # (g TDS)
             result["routedDomTDS"] = self.routedDomTDS
@@ -420,90 +395,89 @@ class WaterQuality(object):
             )
 
             # initial average irrigation demand and net liquid water to the soil, for the irrigation return flows
-            if self.calculateLoads:
-                self.avg_irrGrossDemand = vos.readPCRmapClone(
-                    options["avg_irrGrossDemandIni"],
-                    self.tmpDir,
-                    self.inputDir,
-                )
-                self.avg_netLqWaterToSoil = vos.readPCRmapClone(
-                    options["avg_netLqWaterToSoilIni"],
-                    self.tmpDir,
-                    self.inputDir,
-                )
+            self.avg_irrGrossDemand = vos.readPCRmapClone(
+                options["avg_irrGrossDemandIni"],
+                self.tmpDir,
+                self.inputDir,
+            )
+            self.avg_netLqWaterToSoil = vos.readPCRmapClone(
+                options["avg_netLqWaterToSoilIni"],
+                self.tmpDir,
+                self.inputDir,
+            )
 
-                # per water quality sector
-                if self.loadsPerSector:
-                    self.routedDomTDS = vos.readPCRmapClone(
-                        options["routedDomTDSIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedDomBOD = vos.readPCRmapClone(
-                        options["routedDomBODIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedDomFC = vos.readPCRmapClone(
-                        options["routedDomFCIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedManTDS = vos.readPCRmapClone(
-                        options["routedManTDSIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedManBOD = vos.readPCRmapClone(
-                        options["routedManBODIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedManFC = vos.readPCRmapClone(
-                        options["routedManFCIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedUSRTDS = vos.readPCRmapClone(
-                        options["routedUSRTDSIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedUSRBOD = vos.readPCRmapClone(
-                        options["routedUSRBODIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedUSRFC = vos.readPCRmapClone(
-                        options["routedUSRFCIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedintLivBOD = vos.readPCRmapClone(
-                        options["routedintLivBODIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedintLivFC = vos.readPCRmapClone(
-                        options["routedintLivFCIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedextLivBOD = vos.readPCRmapClone(
-                        options["routedextLivBODIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedextLivFC = vos.readPCRmapClone(
-                        options["routedextLivFCIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
-                    self.routedIrrTDS = vos.readPCRmapClone(
-                        options["routedIrrTDSIni"],
-                        self.tmpDir,
-                        self.inputDir,
-                    )
+            # per water quality sector
+            if self.loadsPerSector:
+                self.routedDomTDS = vos.readPCRmapClone(
+                    options["routedDomTDSIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedDomBOD = vos.readPCRmapClone(
+                    options["routedDomBODIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedDomFC = vos.readPCRmapClone(
+                    options["routedDomFCIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedManTDS = vos.readPCRmapClone(
+                    options["routedManTDSIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedManBOD = vos.readPCRmapClone(
+                    options["routedManBODIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedManFC = vos.readPCRmapClone(
+                    options["routedManFCIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedUSRTDS = vos.readPCRmapClone(
+                    options["routedUSRTDSIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedUSRBOD = vos.readPCRmapClone(
+                    options["routedUSRBODIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedUSRFC = vos.readPCRmapClone(
+                    options["routedUSRFCIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedintLivBOD = vos.readPCRmapClone(
+                    options["routedintLivBODIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedintLivFC = vos.readPCRmapClone(
+                    options["routedintLivFCIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedextLivBOD = vos.readPCRmapClone(
+                    options["routedextLivBODIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedextLivFC = vos.readPCRmapClone(
+                    options["routedextLivFCIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
+                self.routedIrrTDS = vos.readPCRmapClone(
+                    options["routedIrrTDSIni"],
+                    self.tmpDir,
+                    self.inputDir,
+                )
 
         else:
             if self.using_qualloc:
@@ -518,28 +492,25 @@ class WaterQuality(object):
             self.routedFC = iniConditions["routing"]["routedFC"]
 
             # initial average irrigation demand and net liquid water to the soil, for the irrigation return flows
-            if self.calculateLoads:
-                self.avg_irrGrossDemand = iniConditions["routing"]["avg_irrGrossDemand"]
-                self.avg_netLqWaterToSoil = iniConditions["routing"][
-                    "avg_netLqWaterToSoil"
-                ]
+            self.avg_irrGrossDemand = iniConditions["routing"]["avg_irrGrossDemand"]
+            self.avg_netLqWaterToSoil = iniConditions["routing"]["avg_netLqWaterToSoil"]
 
-                # per water quality sector
-                if self.loadsPerSector:
-                    self.routedDomTDS = iniConditions["routing"]["routedDomTDS"]
-                    self.routedDomBOD = iniConditions["routing"]["routedDomBOD"]
-                    self.routedDomFC = iniConditions["routing"]["routedDomFC"]
-                    self.routedManTDS = iniConditions["routing"]["routedManTDS"]
-                    self.routedManBOD = iniConditions["routing"]["routedManBOD"]
-                    self.routedManFC = iniConditions["routing"]["routedManFC"]
-                    self.routedUSRTDS = iniConditions["routing"]["routedUSRTDS"]
-                    self.routedUSRBOD = iniConditions["routing"]["routedUSRBOD"]
-                    self.routedUSRFC = iniConditions["routing"]["routedUSRFC"]
-                    self.routedintLivBOD = iniConditions["routing"]["routedintLivBOD"]
-                    self.routedintLivFC = iniConditions["routing"]["routedintLivFC"]
-                    self.routedextLivBOD = iniConditions["routing"]["routedextLivBOD"]
-                    self.routedextLivFC = iniConditions["routing"]["routedextLivFC"]
-                    self.routedIrrTDS = iniConditions["routing"]["routedIrrTDS"]
+            # per water quality sector
+            if self.loadsPerSector:
+                self.routedDomTDS = iniConditions["routing"]["routedDomTDS"]
+                self.routedDomBOD = iniConditions["routing"]["routedDomBOD"]
+                self.routedDomFC = iniConditions["routing"]["routedDomFC"]
+                self.routedManTDS = iniConditions["routing"]["routedManTDS"]
+                self.routedManBOD = iniConditions["routing"]["routedManBOD"]
+                self.routedManFC = iniConditions["routing"]["routedManFC"]
+                self.routedUSRTDS = iniConditions["routing"]["routedUSRTDS"]
+                self.routedUSRBOD = iniConditions["routing"]["routedUSRBOD"]
+                self.routedUSRFC = iniConditions["routing"]["routedUSRFC"]
+                self.routedintLivBOD = iniConditions["routing"]["routedintLivBOD"]
+                self.routedintLivFC = iniConditions["routing"]["routedintLivFC"]
+                self.routedextLivBOD = iniConditions["routing"]["routedextLivBOD"]
+                self.routedextLivFC = iniConditions["routing"]["routedextLivFC"]
+                self.routedIrrTDS = iniConditions["routing"]["routedIrrTDS"]
 
         if self.using_qualloc:
             self.salinity = pcr.ifthen(self.landmask, pcr.cover(self.salinity, 0.0))
@@ -565,57 +536,56 @@ class WaterQuality(object):
         self.routedFC = pcr.ifthen(self.landmask, pcr.cover(self.routedFC, 0.0))
 
         # per water quality sector
-        if self.calculateLoads:
-            self.avg_irrGrossDemand = pcr.ifthen(
-                self.landmask, pcr.cover(self.avg_irrGrossDemand, 0.0)
-            )
-            self.avg_netLqWaterToSoil = pcr.ifthen(
-                self.landmask, pcr.cover(self.avg_netLqWaterToSoil, 0.0)
-            )
+        self.avg_irrGrossDemand = pcr.ifthen(
+            self.landmask, pcr.cover(self.avg_irrGrossDemand, 0.0)
+        )
+        self.avg_netLqWaterToSoil = pcr.ifthen(
+            self.landmask, pcr.cover(self.avg_netLqWaterToSoil, 0.0)
+        )
 
-            if self.loadsPerSector:
-                self.routedDomTDS = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedDomTDS, 0.0)
-                )
-                self.routedDomBOD = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedDomBOD, 0.0)
-                )
-                self.routedDomFC = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedDomFC, 0.0)
-                )
-                self.routedManTDS = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedManTDS, 0.0)
-                )
-                self.routedManBOD = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedManBOD, 0.0)
-                )
-                self.routedManFC = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedManFC, 0.0)
-                )
-                self.routedUSRTDS = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedUSRTDS, 0.0)
-                )
-                self.routedUSRBOD = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedUSRBOD, 0.0)
-                )
-                self.routedUSRFC = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedUSRFC, 0.0)
-                )
-                self.routedintLivBOD = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedintLivBOD, 0.0)
-                )
-                self.routedintLivFC = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedintLivFC, 0.0)
-                )
-                self.routedextLivBOD = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedextLivBOD, 0.0)
-                )
-                self.routedextLivFC = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedextLivFC, 0.0)
-                )
-                self.routedIrrTDS = pcr.ifthen(
-                    self.landmask, pcr.cover(self.routedIrrTDS, 0.0)
-                )
+        if self.loadsPerSector:
+            self.routedDomTDS = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedDomTDS, 0.0)
+            )
+            self.routedDomBOD = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedDomBOD, 0.0)
+            )
+            self.routedDomFC = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedDomFC, 0.0)
+            )
+            self.routedManTDS = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedManTDS, 0.0)
+            )
+            self.routedManBOD = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedManBOD, 0.0)
+            )
+            self.routedManFC = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedManFC, 0.0)
+            )
+            self.routedUSRTDS = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedUSRTDS, 0.0)
+            )
+            self.routedUSRBOD = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedUSRBOD, 0.0)
+            )
+            self.routedUSRFC = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedUSRFC, 0.0)
+            )
+            self.routedintLivBOD = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedintLivBOD, 0.0)
+            )
+            self.routedintLivFC = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedintLivFC, 0.0)
+            )
+            self.routedextLivBOD = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedextLivBOD, 0.0)
+            )
+            self.routedextLivFC = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedextLivFC, 0.0)
+            )
+            self.routedIrrTDS = pcr.ifthen(
+                self.landmask, pcr.cover(self.routedIrrTDS, 0.0)
+            )
 
     def update_before_routing(
         self,
@@ -645,13 +615,8 @@ class WaterQuality(object):
         self.readExtensiveMeteo(currTimeStep)
 
         # pollutant loadings
-        if self.calculateLoads:
-            # daily input data for estimating the pollutant loadings, unless adjusted in the function
-            self.readPollutantLoadingsInputData(currTimeStep)
-            # pollutant loadings calculated (or read) daily, unless adjusted in the function
-            self.calculatePollutantLoadings(currTimeStep, landSurface, groundwater)
-        else:
-            self.readPollutantLoadings(currTimeStep)
+        self.readPollutantLoadingsInputData(currTimeStep)
+        self.calculatePollutantLoadings(currTimeStep, landSurface, groundwater)
 
         # heat dumps from water temperature dependent power plants (J/day)
         self.PowTwload = pcr.cover(
@@ -697,29 +662,24 @@ class WaterQuality(object):
         self.estimate_concentrations()
 
     def update_statistics(self, landSurface, timestepsToAvgDischarge):
-        # average irrigation water allocated over the last 30 days (needed when loadings
-        # are calculated in the loop)
-        if self.calculateLoads:
-            # average irrigation gross demand over the last 30 days
-            irrGrossDemand = deepcopy(landSurface.irrGrossDemand)
-            deltaAno_irrGrossDemand = (
-                pcr.max(0.0, irrGrossDemand) - self.avg_irrGrossDemand
-            )
-            self.avg_irrGrossDemand = (
-                self.avg_irrGrossDemand
-                + deltaAno_irrGrossDemand / pcr.min(30.0, timestepsToAvgDischarge)
-            )
-            self.avg_irrGrossDemand = pcr.max(0.0, self.avg_irrGrossDemand)
+        # average irrigation gross demand over the last 30 days
+        irrGrossDemand = deepcopy(landSurface.irrGrossDemand)
+        deltaAno_irrGrossDemand = pcr.max(0.0, irrGrossDemand) - self.avg_irrGrossDemand
+        self.avg_irrGrossDemand = (
+            self.avg_irrGrossDemand
+            + deltaAno_irrGrossDemand / pcr.min(30.0, timestepsToAvgDischarge)
+        )
+        self.avg_irrGrossDemand = pcr.max(0.0, self.avg_irrGrossDemand)
 
-            # average netLqWaterToSoil over the last 30 days
-            deltaAno_netLqWaterToSoil = (
-                pcr.max(0.0, landSurface.netLqWaterToSoil) - self.avg_netLqWaterToSoil
-            )
-            self.avg_netLqWaterToSoil = (
-                self.avg_netLqWaterToSoil
-                + deltaAno_netLqWaterToSoil / pcr.min(30.0, timestepsToAvgDischarge)
-            )
-            self.avg_netLqWaterToSoil = pcr.max(0.0, self.avg_netLqWaterToSoil)
+        # average netLqWaterToSoil over the last 30 days
+        deltaAno_netLqWaterToSoil = (
+            pcr.max(0.0, landSurface.netLqWaterToSoil) - self.avg_netLqWaterToSoil
+        )
+        self.avg_netLqWaterToSoil = (
+            self.avg_netLqWaterToSoil
+            + deltaAno_netLqWaterToSoil / pcr.min(30.0, timestepsToAvgDischarge)
+        )
+        self.avg_netLqWaterToSoil = pcr.max(0.0, self.avg_netLqWaterToSoil)
 
     def reported_variable_names(self):
         names = [
@@ -1516,40 +1476,6 @@ class WaterQuality(object):
             + self.intLiv_FCload
             + self.extLiv_FCload
         )
-
-    def readPollutantLoadings(self, currTimeStep):
-        # use precalculated pollutant loadings
-        logger.info("Reading loadings directly")
-
-        # TDS loadings (all sectors combined)
-        self.TDSload = vos.netcdf2PCRobjClone(
-            self.TDSloadNC,
-            "TDSload",
-            str(currTimeStep.fulldate),
-            useDoy=None,
-            LatitudeLongitude=True,
-        )
-        self.TDSload = pcr.ifthen(self.landmask, self.TDSload)
-
-        # BOD loadings (all sectors combined)
-        self.BODload = vos.netcdf2PCRobjClone(
-            self.BODloadNC,
-            "BODload",
-            str(currTimeStep.fulldate),
-            useDoy=None,
-            LatitudeLongitude=True,
-        )
-        self.BODload = pcr.ifthen(self.landmask, self.BODload)
-
-        # FC loadings (all sectors combined)
-        self.FCload = vos.netcdf2PCRobjClone(
-            self.FCloadNC,
-            "FCload",
-            str(currTimeStep.fulldate),
-            useDoy=None,
-            LatitudeLongitude=True,
-        )
-        self.FCload = pcr.ifthen(self.landmask, self.FCload)
 
     def qualityLocal(
         self, meteo, landSurface, groundwater, currTimeStep, timeSec=vos.secondsPerDay()

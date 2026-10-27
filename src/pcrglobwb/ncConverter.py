@@ -6,7 +6,7 @@ import netCDF4 as nc
 import numpy as np
 import pcraster as pcr
 
-from pcrglobwb.common import virtualOS as vos
+from common import virtualOS as vos
 
 # TODO: use a file cache (e.g. filecache = dict()) to avoid opening and closing files
 

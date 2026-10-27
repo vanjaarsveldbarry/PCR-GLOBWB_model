@@ -9,8 +9,8 @@ import shutil
 import sys
 from configparser import RawConfigParser as ConfigParser
 
-from pcrglobwb.common import disclaimer
-from pcrglobwb.common import virtualOS as vos
+from common import disclaimer
+from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import logging
 
 import pcraster as pcr
 
+from common import virtualOS as vos
 from pcrglobwb import groundwater, landSurface, meteo, routing
-from pcrglobwb.common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
 

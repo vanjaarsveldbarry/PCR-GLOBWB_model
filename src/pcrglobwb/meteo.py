@@ -6,7 +6,7 @@ import math
 import numpy as np
 import pcraster as pcr
 
-from pcrglobwb.common import virtualOS as vos
+from common import virtualOS as vos
 from pcrglobwb.evaporation import hamonETPFunctions as hamon_et0
 from pcrglobwb.evaporation import ref_pot_et_penman_monteith as penman_monteith
 from pcrglobwb.evaporation import shortwave_radiation as sw_rad

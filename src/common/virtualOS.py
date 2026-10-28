@@ -47,6 +47,28 @@ def _retryIfRemote(read, maxTries=5):
     return wrapper
 
 
+def _resolveVarName(f, varName):
+    # "automatic" picks the last variable that is neither a dimension nor a lat/lon axis
+    varName = str(varName)
+    if varName == "automatic":
+        axes = set(f.dimensions) | {"lat", "lon", "latitude", "longitude"}
+        return [var for var in f.variables if var not in axes][-1]
+    # PCR-GLOBWB variable names and the names some input files use instead
+    aliases = {
+        "evapotranspiration": "referencePotET",
+        "kc": "Cropcoefficient",
+        "interceptCapInput": "Interceptioncapacity",
+        "coverFractionInput": "Coverfraction",
+        "fracVegCover": "vegetation_fraction",
+        "minSoilDepthFrac": "minRootDepthFraction",
+        "maxSoilDepthFrac": "maxRootDepthFraction",
+        "arnoBeta": "arnoSchemeBeta",
+    }
+    if varName not in f.variables and aliases.get(varName) in f.variables:
+        return aliases[varName]
+    return varName
+
+
 def readUpstreamDischarge(
     ncFile,
     varName="automatic",
@@ -151,17 +173,12 @@ def readDownscalingMeteo(
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 
-    if varName != "automatic":
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-
     if ncFile in list(filecache.keys()):
         f = filecache[ncFile]
 
     else:
         f = nc.Dataset(ncFile)
         filecache[ncFile] = f
-
-    varName = str(varName)
 
     if LatitudeLongitude:
         try:
@@ -170,18 +187,8 @@ def readDownscalingMeteo(
         except Exception:
             pass
 
-    if varName == "automatic":
-        nc_dims = [dim for dim in f.dimensions]
-        nc_vars = [var for var in f.variables]
-        for var in nc_vars:
-            if var not in nc_dims and var not in [
-                "lat",
-                "lon",
-                "latitude",
-                "longitude",
-            ]:
-                varName = var
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
+    varName = _resolveVarName(f, varName)
+    logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
     if dateInput is None:
         logger.debug("Using the first time step in the netcdf file.")
@@ -435,26 +442,12 @@ def netcdf2PCRobjCloneWithoutTime(
     if absolutePath is not None:
         ncFile = getFullPath(ncFile, absolutePath)
 
-    logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 
     f = nc.Dataset(ncFile)
-    varName = str(varName)
-
-    if varName == "automatic":
-        nc_dims = [dim for dim in f.dimensions]
-        nc_vars = [var for var in f.variables]
-        for var in nc_vars:
-            if var not in nc_dims and var not in [
-                "lat",
-                "lon",
-                "latitude",
-                "longitude",
-            ]:
-                varName = var
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
+    varName = _resolveVarName(f, varName)
+    logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
     if LatitudeLongitude:
         try:
@@ -536,17 +529,12 @@ def netcdf2PCRobjClone(
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 
-    if varName != "automatic":
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-
     if ncFile in list(filecache.keys()):
         f = filecache[ncFile]
 
     else:
         f = nc.Dataset(ncFile)
         filecache[ncFile] = f
-
-    varName = str(varName)
 
     if LatitudeLongitude:
         try:
@@ -555,67 +543,8 @@ def netcdf2PCRobjClone(
         except Exception:
             pass
 
-    if varName == "automatic":
-        nc_dims = [dim for dim in f.dimensions]
-        nc_vars = [var for var in f.variables]
-        for var in nc_vars:
-            if var not in nc_dims and var not in [
-                "lat",
-                "lon",
-                "latitude",
-                "longitude",
-            ]:
-                varName = var
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-
-    if varName == "evapotranspiration":
-        try:
-            f.variables["evapotranspiration"] = f.variables["referencePotET"]
-        except Exception:
-            pass
-
-    # map PCR-GLOBWB variable names to the names in the netCDF file
-    if varName == "kc":
-        try:
-            f.variables["kc"] = f.variables["Cropcoefficient"]
-        except Exception:
-            pass
-
-    if varName == "interceptCapInput":
-        try:
-            f.variables["interceptCapInput"] = f.variables["Interceptioncapacity"]
-        except Exception:
-            pass
-
-    if varName == "coverFractionInput":
-        try:
-            f.variables["coverFractionInput"] = f.variables["Coverfraction"]
-        except Exception:
-            pass
-
-    if varName == "fracVegCover":
-        try:
-            f.variables["fracVegCover"] = f.variables["vegetation_fraction"]
-        except Exception:
-            pass
-
-    if varName == "minSoilDepthFrac":
-        try:
-            f.variables["minSoilDepthFrac"] = f.variables["minRootDepthFraction"]
-        except Exception:
-            pass
-
-    if varName == "maxSoilDepthFrac":
-        try:
-            f.variables["maxSoilDepthFrac"] = f.variables["maxRootDepthFraction"]
-        except Exception:
-            pass
-
-    if varName == "arnoBeta":
-        try:
-            f.variables["arnoBeta"] = f.variables["arnoSchemeBeta"]
-        except Exception:
-            pass
+    varName = _resolveVarName(f, varName)
+    logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
     if dateInput is None:
         logger.debug("Using the first time step in the netcdf file.")

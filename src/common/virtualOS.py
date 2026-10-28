@@ -426,6 +426,24 @@ def checkVariableInNC(ncFile, varName):
     return str(varName) in filecache[ncFile].variables
 
 
+def _readOntoClone(ncFile, varName, index, specificFillValue):
+    # index selects along the leading dims; the last two are read as lat/lon.
+    # Only works for square cells and if cellsizeClone <= cellsizeInput.
+    var = filecache[ncFile].variables[varName]
+    yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
+    cropData = var[(*index, yslice, xslice)]
+
+    if specificFillValue is not None:
+        fillValue = float(specificFillValue)
+    elif hasattr(var, "_FillValue"):
+        fillValue = float(var._FillValue)
+    else:
+        fillValue = float(var.missing_value)
+    return pcr.numpy2pcr(
+        pcr.Scalar, regridData2FinerGrid(factor, cropData, fillValue), fillValue
+    )
+
+
 @_retryIfRemote
 def netcdf2PCRobjCloneWithoutTime(
     ncFile,
@@ -438,45 +456,13 @@ def netcdf2PCRobjCloneWithoutTime(
     if absolutePath is not None:
         ncFile = getFullPath(ncFile, absolutePath)
 
-    # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
-    # only works for square cells and if cellsizeClone <= cellsizeInput
-
     if ncFile not in filecache:
         filecache[ncFile] = nc.Dataset(ncFile)
     f = filecache[ncFile]
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
-    yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
-
-    cropData = f.variables[varName][yslice, xslice]
-
-    # convert to a PCRaster object
-    if specificFillValue is not None:
-        outPCR = pcr.numpy2pcr(
-            pcr.Scalar,
-            regridData2FinerGrid(factor, cropData, float(specificFillValue)),
-            float(specificFillValue),
-        )
-    else:
-        try:
-            outPCR = pcr.numpy2pcr(
-                pcr.Scalar,
-                regridData2FinerGrid(
-                    factor, cropData, float(f.variables[varName]._FillValue)
-                ),
-                float(f.variables[varName]._FillValue),
-            )
-        except Exception:
-            outPCR = pcr.numpy2pcr(
-                pcr.Scalar,
-                regridData2FinerGrid(
-                    factor, cropData, float(f.variables[varName].missing_value)
-                ),
-                float(f.variables[varName].missing_value),
-            )
-
-    return outPCR
+    return _readOntoClone(ncFile, varName, (), specificFillValue)
 
 
 @_retryIfRemote
@@ -488,8 +474,6 @@ def netcdf2PCRobjClone(
     LatitudeLongitude=True,
     specificFillValue=None,
 ):
-    # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
-    # only works for square cells and if cellsizeClone <= cellsizeInput
 
     if ncFile not in filecache:
         filecache[ncFile] = nc.Dataset(ncFile)
@@ -499,41 +483,12 @@ def netcdf2PCRobjClone(
 
     idx, date = _timeIndex(f, dateInput, useDoy)
 
-    yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
-
-    # retrieve the data slice from the netCDF file
     if f.variables[varName].ndim == 4:
         logger.warning("%s (%s) is 4D; last two dims read as lat/lon", ncFile, varName)
-        # file with an additional layer
-        cropData = f.variables[varName][int(idx), 0, yslice, xslice]
+        index = (int(idx), 0)
     else:
-        # standard netCDF file
-        cropData = f.variables[varName][int(idx), yslice, xslice]
-
-    # convert to a PCRaster object
-    if specificFillValue is not None:
-        outPCR = pcr.numpy2pcr(
-            pcr.Scalar,
-            regridData2FinerGrid(factor, cropData, float(specificFillValue)),
-            float(specificFillValue),
-        )
-    else:
-        try:
-            outPCR = pcr.numpy2pcr(
-                pcr.Scalar,
-                regridData2FinerGrid(
-                    factor, cropData, float(f.variables[varName]._FillValue)
-                ),
-                float(f.variables[varName]._FillValue),
-            )
-        except Exception:
-            outPCR = pcr.numpy2pcr(
-                pcr.Scalar,
-                regridData2FinerGrid(
-                    factor, cropData, float(f.variables[varName].missing_value)
-                ),
-                float(f.variables[varName].missing_value),
-            )
+        index = (int(idx),)
+    outPCR = _readOntoClone(ncFile, varName, index, specificFillValue)
 
     if useDoy == "daily_per_monthly_file":
         # close the file on the last day of the month and remove it from the cache

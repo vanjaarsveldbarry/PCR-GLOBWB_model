@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import functools
 import logging
 import math
 import os
@@ -28,8 +29,22 @@ pi = math.pi
 # netCDF file suffixes that can be used
 netcdf_suffixes = (".nc4", ".nc")
 
-# maximum number of tries for reading files
-max_num_of_tries = 5
+
+def _retryIfRemote(read, maxTries=5):
+    # only remote (OPeNDAP) sources are retried; local files are read once
+    @functools.wraps(read)
+    def wrapper(ncFile, *args, **kwargs):
+        if not str(ncFile).startswith("http"):
+            return read(ncFile, *args, **kwargs)
+        for attempt in range(1, maxTries + 1):
+            try:
+                return read(ncFile, *args, **kwargs)
+            except (OSError, RuntimeError) as error:
+                if attempt == maxTries:
+                    raise
+                logger.warning(f"Re-try {attempt}/{maxTries} to read {ncFile}: {error}")
+
+    return wrapper
 
 
 def readUpstreamDischarge(
@@ -408,32 +423,8 @@ def checkVariableInNC(ncFile, varName):
     return varName in list(f.variables.keys())
 
 
+@_retryIfRemote
 def netcdf2PCRobjCloneWithoutTime(
-    ncFile,
-    varName,
-    LatitudeLongitude=True,
-    specificFillValue=None,
-    absolutePath=None,
-):
-
-    iter_try = 0
-    while iter_try < max_num_of_tries:
-        try:
-            return singleTryNetcdf2PCRobjCloneWithoutTime(
-                ncFile, varName, LatitudeLongitude, specificFillValue
-            )
-        except Exception:
-            iter_try = iter_try + 1
-            logger.warning(f"Re-try to read file: {ncFile}")
-
-    if iter_try >= max_num_of_tries:
-        logger.error(f"CANNOT READ file: {ncFile}")
-        return singleTryNetcdf2PCRobjCloneWithoutTime(
-            ncFile, varName, LatitudeLongitude, specificFillValue
-        )
-
-
-def singleTryNetcdf2PCRobjCloneWithoutTime(
     ncFile,
     varName,
     LatitudeLongitude=True,
@@ -533,43 +524,8 @@ def singleTryNetcdf2PCRobjCloneWithoutTime(
     return outPCR
 
 
+@_retryIfRemote
 def netcdf2PCRobjClone(
-    ncFile,
-    varName="automatic",
-    dateInput=None,
-    useDoy=None,
-    LatitudeLongitude=True,
-    specificFillValue=None,
-):
-
-    iter_try = 0
-    while iter_try < max_num_of_tries:
-        try:
-            return singleTryNetcdf2PCRobjClone(
-                ncFile,
-                varName,
-                dateInput,
-                useDoy,
-                LatitudeLongitude,
-                specificFillValue,
-            )
-        except Exception:
-            iter_try = iter_try + 1
-            logger.warning(f"Re-try to read file: {ncFile}")
-
-    if iter_try >= max_num_of_tries:
-        logger.error(f"CANNOT READ file: {ncFile}")
-        return singleTryNetcdf2PCRobjClone(
-            ncFile,
-            varName,
-            dateInput,
-            useDoy,
-            LatitudeLongitude,
-            specificFillValue,
-        )
-
-
-def singleTryNetcdf2PCRobjClone(
     ncFile,
     varName="automatic",
     dateInput=None,
@@ -870,32 +826,6 @@ def writePCRmapToDir(v, outFileName, outDir):
 
 
 def readPCRmapClone(
-    v,
-    tmpDir,
-    absolutePath=None,
-    isLddMap=False,
-    cover=None,
-    isNomMap=False,
-):
-
-    iter_try = 0
-    while iter_try < max_num_of_tries:
-        try:
-            return singleTryReadPCRmapClone(
-                v, tmpDir, absolutePath, isLddMap, cover, isNomMap
-            )
-        except Exception:
-            iter_try = iter_try + 1
-            logger.warning(f"Re-try to read file/value: {v}")
-
-    if iter_try >= max_num_of_tries:
-        logger.error(f"CANNOT READ file: {v}")
-        return singleTryReadPCRmapClone(
-            v, tmpDir, absolutePath, isLddMap, cover, isNomMap
-        )
-
-
-def singleTryReadPCRmapClone(
     v,
     tmpDir,
     absolutePath=None,

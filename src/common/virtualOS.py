@@ -501,6 +501,16 @@ def netcdf2PCRobjClone(
     return outPCR
 
 
+@_retryIfRemote
+def _hasTimeAxis(ncFile, varName):
+    # decided per variable, not per file: a file can have a time dimension that
+    # the variable being read does not use
+    if ncFile not in filecache:
+        filecache[ncFile] = nc.Dataset(ncFile)
+    f = filecache[ncFile]
+    return "time" in f.variables[_resolveVarName(f, varName)].dimensions
+
+
 def writePCRmapToDir(v, outFileName, outDir):
     # v: input map file name or value; if the input map and the clone have different
     # grids, the map is resampled
@@ -537,17 +547,15 @@ def readPCRmapClone(
 
             logger.debug(f"read netcdf file: {v}")
 
-            try:
-                # netCDF file without time
-                PCRmap = netcdf2PCRobjCloneWithoutTime(ncFile=v, varName="automatic")
-            except Exception:
-                # netCDF file with time
+            if _hasTimeAxis(v, "automatic"):
                 PCRmap = netcdf2PCRobjClone(
                     ncFile=v,
                     varName="automatic",
                     dateInput=None,
                     useDoy=None,
                 )
+            else:
+                PCRmap = netcdf2PCRobjCloneWithoutTime(ncFile=v, varName="automatic")
 
         else:
 

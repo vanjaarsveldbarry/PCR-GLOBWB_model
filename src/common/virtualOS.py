@@ -127,6 +127,95 @@ def _ncGrid(ncFile):
     return _gridcache[ncFile]
 
 
+def _timeIndex(f, dateInput, useDoy):
+    # returns (idx, date); date is the one actually looked up, after year clamping,
+    # and is what daily_per_monthly_file uses to decide when to close the file
+    time = f.variables["time"]
+    ncFile = f.filepath()
+    date = dateInput
+
+    if dateInput is None:
+        logger.debug("Using the first time step in the netcdf file.")
+        idx = 0
+        if len(time) > 1:
+            logger.warning(
+                "NOTE that there are more than one time steps in the netcdf file."
+            )
+    elif useDoy == "Yes":
+        logger.debug("Finding the date from climatology doy index (1 to 366)")
+        idx = int(dateInput) - 1
+    # needed for netCDF files that contain only 12 monthly values (e.g. cropCoefficientWaterNC)
+    elif useDoy == "month":
+        logger.debug("Finding the date from climatology month index (1 to 12)")
+        if isinstance(date, str):
+            date = datetime.datetime.strptime(date, "%Y-%m-%d")
+        idx = int(date.month) - 1
+    else:
+        if isinstance(date, str):
+            date = datetime.datetime.strptime(date, "%Y-%m-%d")
+        date = datetime.datetime(date.year, date.month, date.day)
+        if useDoy == "yearly":
+            date = datetime.datetime(date.year, 1, 1)
+        if useDoy == "monthly":
+            date = datetime.datetime(date.year, date.month, 1)
+        if useDoy in (
+            "yearly",
+            "monthly",
+            "daily_seasonal",
+            "daily",
+            "daily_per_monthly_file",
+        ):
+            # if the desired year is not available, use the first or last available year
+            firstYear = findFirstYearInNCTime(time)
+            lastYear = findLastYearInNCTime(time)
+            year = min(max(date.year, firstYear), lastYear)
+            if year != date.year:
+                day = date.day
+                if (
+                    date.month == 2
+                    and day == 29
+                    and calendar.isleap(date.year)
+                    and not calendar.isleap(year)
+                ):
+                    day = 28
+                date = datetime.datetime(year, date.month, day)
+                logger.warning(
+                    f"Date {dateInput} NOT available in {ncFile}; "
+                    f"using {date.year}-{date.month}-{date.day} instead."
+                )
+        try:
+            idx = nc.date2index(date, time, calendar=time.calendar, select="exact")
+            logger.debug(f"{date:%Y-%m-%d} found in netcdf; using select='exact'")
+        except Exception:
+            logger.debug(f"{date:%Y-%m-%d} not found; select='exact' not possible")
+            if useDoy == "daily":
+                select = "after"
+                idx = nc.date2index(date, time, calendar=time.calendar, select=select)
+            else:
+                try:
+                    select = "before"
+                    idx = nc.date2index(
+                        date, time, calendar=time.calendar, select=select
+                    )
+                except Exception:
+                    select = "after"
+                    idx = nc.date2index(
+                        date, time, calendar=time.calendar, select=select
+                    )
+            logger.warning(
+                f"Date {date.year}-{date.month}-{date.day} 00:00:00 NOT available in {ncFile}; "
+                f"the '{select}' option is used, giving "
+                f"{nc.num2date(time[int(idx)], time.units, time.calendar)}."
+            )
+
+    idx = int(idx)
+    logger.debug(f"Using the date index {idx}")
+    logger.debug(
+        f"Using the datetime {nc.num2date(time[idx], time.units, time.calendar)}"
+    )
+    return idx, date
+
+
 def readUpstreamDischarge(
     ncFile,
     varName="automatic",
@@ -239,131 +328,7 @@ def readDownscalingMeteo(
     grid = _ncGrid(ncFile)
     ncLat, ncLon = grid.lat, grid.lon
 
-    if dateInput is None:
-        logger.debug("Using the first time step in the netcdf file.")
-        idx = 0
-        if len(f.variables["time"]) > 1:
-            logger.warning(
-                "NOTE that there are more than one time steps in the netcdf file."
-            )
-
-    else:
-        date = dateInput
-        if useDoy == "Yes":
-            logger.debug("Finding the date from climatology doy index (1 to 366)")
-            idx = int(dateInput) - 1
-        # needed for netCDF files that contain only 12 monthly values (e.g. cropCoefficientWaterNC)
-        elif useDoy == "month":
-            logger.debug("Finding the date from climatology month index (1 to 12)")
-            # make sure the date has the correct format
-            if isinstance(date, str):
-                date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
-            idx = int(date.month) - 1
-        else:
-            # make sure the date has the correct format
-            if isinstance(date, str):
-                date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
-            date = datetime.datetime(date.year, date.month, date.day)
-            if useDoy == "yearly":
-                date = datetime.datetime(date.year, int(1), int(1))
-            if useDoy == "monthly":
-                date = datetime.datetime(date.year, date.month, int(1))
-            if (
-                useDoy == "yearly"
-                or useDoy == "monthly"
-                or useDoy == "daily_seasonal"
-                or useDoy == "daily"
-                or useDoy == "daily_per_monthly_file"
-            ):
-                # if the desired year is not available, use the first or last available year
-                first_year_in_nc_file = findFirstYearInNCTime(f.variables["time"])
-                last_year_in_nc_file = findLastYearInNCTime(f.variables["time"])
-                if date.year < first_year_in_nc_file:
-                    if (
-                        date.day == 29
-                        and date.month == 2
-                        and calendar.isleap(date.year)
-                        and not calendar.isleap(first_year_in_nc_file)
-                    ):
-                        date = datetime.datetime(first_year_in_nc_file, date.month, 28)
-                    else:
-                        date = datetime.datetime(
-                            first_year_in_nc_file, date.month, date.day
-                        )
-                    logger.warning(
-                        f"Date {dateInput} NOT available in {ncFile} (variable: {varName}); "
-                        f"using {date.year}-{date.month}-{date.day} instead."
-                    )
-                if date.year > last_year_in_nc_file:
-                    if (
-                        date.day == 29
-                        and date.month == 2
-                        and calendar.isleap(date.year)
-                        and not calendar.isleap(last_year_in_nc_file)
-                    ):
-                        date = datetime.datetime(last_year_in_nc_file, date.month, 28)
-                    else:
-                        date = datetime.datetime(
-                            last_year_in_nc_file, date.month, date.day
-                        )
-                    logger.warning(
-                        f"Date {dateInput} NOT available in {ncFile} (variable: {varName}); "
-                        f"using {date.year}-{date.month}-{date.day} instead."
-                    )
-            try:
-                idx = nc.date2index(
-                    date,
-                    f.variables["time"],
-                    calendar=f.variables["time"].calendar,
-                    select="exact",
-                )
-                logger.debug(f"{date:%Y-%m-%d} found in netcdf; using select='exact'")
-            except Exception:
-                logger.debug(f"{date:%Y-%m-%d} not found; select='exact' not possible")
-                if useDoy == "daily":
-                    idx = nc.date2index(
-                        date,
-                        f.variables["time"],
-                        calendar=f.variables["time"].calendar,
-                        select="after",
-                    )
-                    select = "after"
-                else:
-                    try:
-                        idx = nc.date2index(
-                            date,
-                            f.variables["time"],
-                            calendar=f.variables["time"].calendar,
-                            select="before",
-                        )
-                        select = "before"
-                    except Exception:
-                        idx = nc.date2index(
-                            date,
-                            f.variables["time"],
-                            calendar=f.variables["time"].calendar,
-                            select="after",
-                        )
-                        select = "after"
-                date_string = nc.num2date(
-                    f.variables["time"][int(idx)],
-                    f.variables["time"].units,
-                    f.variables["time"].calendar,
-                )
-                logger.warning(
-                    f"Date {date.year}-{date.month}-{date.day} 00:00:00 NOT available in {ncFile} "
-                    f"(variable: {varName}); the '{select}' option is used, giving {date_string}."
-                )
-
-    idx = int(idx)
-    logger.debug(f"Using the date index {idx}")
-
-    date_string = nc.num2date(
-        f.variables["time"][int(idx)],
-        f.variables["time"].units,
-        f.variables["time"].calendar,
-    )
-    logger.debug(f"Using the datetime {date_string}")
+    idx, _ = _timeIndex(f, dateInput, useDoy)
 
     attributeClone = getCloneAttributes()
     cellsizeClone = attributeClone["cellsize"]
@@ -532,132 +497,7 @@ def netcdf2PCRobjClone(
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
-    if dateInput is None:
-        logger.debug("Using the first time step in the netcdf file.")
-        idx = 0
-        if len(f.variables["time"]) > 1:
-            logger.warning(
-                "NOTE that there are more than one time steps in the netcdf file."
-            )
-
-    else:
-
-        date = dateInput
-        if useDoy == "Yes":
-            logger.debug("Finding the date from climatology doy index (1 to 366)")
-            idx = int(dateInput) - 1
-        # needed for netCDF files that contain only 12 monthly values (e.g. cropCoefficientWaterNC)
-        elif useDoy == "month":
-            logger.debug("Finding the date from climatology month index (1 to 12)")
-            # make sure the date has the correct format
-            if isinstance(date, str):
-                date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
-            idx = int(date.month) - 1
-        else:
-            # make sure the date has the correct format
-            if isinstance(date, str):
-                date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
-            date = datetime.datetime(date.year, date.month, date.day)
-            if useDoy == "yearly":
-                date = datetime.datetime(date.year, int(1), int(1))
-            if useDoy == "monthly":
-                date = datetime.datetime(date.year, date.month, int(1))
-            if (
-                useDoy == "yearly"
-                or useDoy == "monthly"
-                or useDoy == "daily_seasonal"
-                or useDoy == "daily"
-                or useDoy == "daily_per_monthly_file"
-            ):
-                # if the desired year is not available, use the first or last available year
-                first_year_in_nc_file = findFirstYearInNCTime(f.variables["time"])
-                last_year_in_nc_file = findLastYearInNCTime(f.variables["time"])
-                if date.year < first_year_in_nc_file:
-                    if (
-                        date.day == 29
-                        and date.month == 2
-                        and calendar.isleap(date.year)
-                        and not calendar.isleap(first_year_in_nc_file)
-                    ):
-                        date = datetime.datetime(first_year_in_nc_file, date.month, 28)
-                    else:
-                        date = datetime.datetime(
-                            first_year_in_nc_file, date.month, date.day
-                        )
-                    logger.warning(
-                        f"Date {dateInput} NOT available in {ncFile} (variable: {varName}); "
-                        f"using {date.year}-{date.month}-{date.day} instead."
-                    )
-                if date.year > last_year_in_nc_file:
-                    if (
-                        date.day == 29
-                        and date.month == 2
-                        and calendar.isleap(date.year)
-                        and not calendar.isleap(last_year_in_nc_file)
-                    ):
-                        date = datetime.datetime(last_year_in_nc_file, date.month, 28)
-                    else:
-                        date = datetime.datetime(
-                            last_year_in_nc_file, date.month, date.day
-                        )
-                    logger.warning(
-                        f"Date {dateInput} NOT available in {ncFile} (variable: {varName}); "
-                        f"using {date.year}-{date.month}-{date.day} instead."
-                    )
-            try:
-                idx = nc.date2index(
-                    date,
-                    f.variables["time"],
-                    calendar=f.variables["time"].calendar,
-                    select="exact",
-                )
-                logger.debug(f"{date:%Y-%m-%d} found in netcdf; using select='exact'")
-            except Exception:
-                logger.debug(f"{date:%Y-%m-%d} not found; select='exact' not possible")
-                if useDoy == "daily":
-                    idx = nc.date2index(
-                        date,
-                        f.variables["time"],
-                        calendar=f.variables["time"].calendar,
-                        select="after",
-                    )
-                    select = "after"
-                else:
-                    try:
-                        idx = nc.date2index(
-                            date,
-                            f.variables["time"],
-                            calendar=f.variables["time"].calendar,
-                            select="before",
-                        )
-                        select = "before"
-                    except Exception:
-                        idx = nc.date2index(
-                            date,
-                            f.variables["time"],
-                            calendar=f.variables["time"].calendar,
-                            select="after",
-                        )
-                        select = "after"
-                date_string = nc.num2date(
-                    f.variables["time"][int(idx)],
-                    f.variables["time"].units,
-                    f.variables["time"].calendar,
-                )
-                logger.warning(
-                    f"Date {date.year}-{date.month}-{date.day} 00:00:00 NOT available in {ncFile} "
-                    f"(variable: {varName}); the '{select}' option is used, giving {date_string}."
-                )
-
-    idx = int(idx)
-    logger.debug(f"Using the date index {idx}")
-
-    date_string = nc.num2date(
-        f.variables["time"][int(idx)],
-        f.variables["time"].units,
-        f.variables["time"].calendar,
-    )
-    logger.debug(f"Using the datetime {date_string}")
+    idx, date = _timeIndex(f, dateInput, useDoy)
 
     yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
 

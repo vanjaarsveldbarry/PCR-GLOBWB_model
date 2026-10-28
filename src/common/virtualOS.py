@@ -127,9 +127,15 @@ def _ncGrid(ncFile):
     return _gridcache[ncFile]
 
 
-def _timeIndex(f, dateInput, useDoy):
+def _timeIndex(f, dateInput, useDoy, select=None, yearSubstitution=False):
     # returns (idx, date); date is the one actually looked up, after year clamping,
-    # and is what daily_per_monthly_file uses to decide when to close the file
+    # and is what daily_per_monthly_file uses to decide when to close the file.
+    # select is passed to nc.date2index as is; None keeps the exact-then-before/after
+    # fallback.
+    if yearSubstitution and select not in (None, "exact"):
+        raise ValueError(
+            f"yearSubstitution needs select 'exact' or None, got {select!r}"
+        )
     time = f.variables["time"]
     ncFile = f.filepath()
     date = dateInput
@@ -183,30 +189,13 @@ def _timeIndex(f, dateInput, useDoy):
                     f"Date {dateInput} NOT available in {ncFile}; "
                     f"using {date.year}-{date.month}-{date.day} instead."
                 )
-        try:
-            idx = nc.date2index(date, time, calendar=time.calendar, select="exact")
-            logger.debug(f"{date:%Y-%m-%d} found in netcdf; using select='exact'")
-        except Exception:
-            logger.debug(f"{date:%Y-%m-%d} not found; select='exact' not possible")
-            if useDoy == "daily":
-                select = "after"
-                idx = nc.date2index(date, time, calendar=time.calendar, select=select)
-            else:
-                try:
-                    select = "before"
-                    idx = nc.date2index(
-                        date, time, calendar=time.calendar, select=select
-                    )
-                except Exception:
-                    select = "after"
-                    idx = nc.date2index(
-                        date, time, calendar=time.calendar, select=select
-                    )
-            logger.warning(
-                f"Date {date.year}-{date.month}-{date.day} 00:00:00 NOT available in {ncFile}; "
-                f"the '{select}' option is used, giving "
-                f"{nc.num2date(time[int(idx)], time.units, time.calendar)}."
-            )
+        if yearSubstitution:
+            idx = _substitutedYearIndex(date, time, ncFile)
+        elif select is not None:
+            idx = nc.date2index(date, time, calendar=time.calendar, select=select)
+            logger.debug(f"{date:%Y-%m-%d} looked up with select='{select}'")
+        else:
+            idx = _fallbackIndex(date, time, ncFile, useDoy)
 
     idx = int(idx)
     logger.debug(f"Using the date index {idx}")
@@ -214,6 +203,75 @@ def _timeIndex(f, dateInput, useDoy):
         f"Using the datetime {nc.num2date(time[idx], time.units, time.calendar)}"
     )
     return idx, date
+
+
+def _ncDates(time):
+    # in file order; python datetimes, so only real-world calendars are supported
+    return np.asarray(
+        nc.num2date(
+            time[:],
+            time.units,
+            time.calendar,
+            only_use_python_datetimes=True,
+            only_use_cftime_datetimes=False,
+        )
+    ).ravel()
+
+
+@_retryIfRemote
+def getNcDates(ncFile):
+    # sorted; empty if the file has no time variable
+    if ncFile not in filecache:
+        filecache[ncFile] = nc.Dataset(ncFile)
+    f = filecache[ncFile]
+    if "time" not in f.variables:
+        return []
+    return sorted(_ncDates(f.variables["time"]))
+
+
+def _substitutedYearIndex(date, time, ncFile):
+    # Mirrors the year substitution of QUAlloc's former reader so results match: on a miss,
+    # all file dates are shifted by the fixed number of days that moves the nearest
+    # one into the requested year, so others can drift by a day across leap years.
+    dates = _ncDates(time)
+    exact = np.flatnonzero(dates == date)
+    if exact.size > 0:
+        return exact[0]
+
+    nearest = dates[np.argmin(np.abs(dates - date))]
+    offset = datetime.datetime(
+        date.year, nearest.month, nearest.day
+    ) - datetime.datetime(nearest.year, nearest.month, nearest.day)
+    idx = np.argmin(np.abs(dates + offset - date))
+    logger.warning(
+        f"Date {date:%Y-%m-%d} NOT available in {ncFile}; year substitution gives "
+        f"{dates[idx]:%Y-%m-%d}."
+    )
+    return idx
+
+
+def _fallbackIndex(date, time, ncFile, useDoy):
+    try:
+        idx = nc.date2index(date, time, calendar=time.calendar, select="exact")
+        logger.debug(f"{date:%Y-%m-%d} found in netcdf; using select='exact'")
+    except Exception:
+        logger.debug(f"{date:%Y-%m-%d} not found; select='exact' not possible")
+        if useDoy == "daily":
+            select = "after"
+            idx = nc.date2index(date, time, calendar=time.calendar, select=select)
+        else:
+            try:
+                select = "before"
+                idx = nc.date2index(date, time, calendar=time.calendar, select=select)
+            except Exception:
+                select = "after"
+                idx = nc.date2index(date, time, calendar=time.calendar, select=select)
+        logger.warning(
+            f"Date {date.year}-{date.month}-{date.day} 00:00:00 NOT available in {ncFile}; "
+            f"the '{select}' option is used, giving "
+            f"{nc.num2date(time[int(idx)], time.units, time.calendar)}."
+        )
+    return idx
 
 
 def readUpstreamDischarge(
@@ -426,11 +484,16 @@ def checkVariableInNC(ncFile, varName):
     return str(varName) in filecache[ncFile].variables
 
 
-def _readOntoClone(ncFile, varName, index, specificFillValue):
+def _readOntoClone(ncFile, varName, index, specificFillValue, valueScale):
     # index selects along the leading dims; the last two are read as lat/lon.
     # Only works for square cells and if cellsizeClone <= cellsizeInput.
     var = filecache[ncFile].variables[varName]
     yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
+    if valueScale == pcr.Ldd and factor != 1:
+        # block replication would break the flow network
+        raise ValueError(
+            f"{ncFile} ({varName}): Ldd must be at clone resolution, got factor {factor}"
+        )
     cropData = var[(*index, yslice, xslice)]
 
     if specificFillValue is not None:
@@ -440,7 +503,7 @@ def _readOntoClone(ncFile, varName, index, specificFillValue):
     else:
         fillValue = float(var.missing_value)
     return pcr.numpy2pcr(
-        pcr.Scalar, regridData2FinerGrid(factor, cropData, fillValue), fillValue
+        valueScale, regridData2FinerGrid(factor, cropData, fillValue), fillValue
     )
 
 
@@ -451,6 +514,7 @@ def netcdf2PCRobjCloneWithoutTime(
     LatitudeLongitude=True,
     specificFillValue=None,
     absolutePath=None,
+    valueScale=pcr.Scalar,
 ):
 
     if absolutePath is not None:
@@ -462,7 +526,7 @@ def netcdf2PCRobjCloneWithoutTime(
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
-    return _readOntoClone(ncFile, varName, (), specificFillValue)
+    return _readOntoClone(ncFile, varName, (), specificFillValue, valueScale)
 
 
 @_retryIfRemote
@@ -473,6 +537,9 @@ def netcdf2PCRobjClone(
     useDoy=None,
     LatitudeLongitude=True,
     specificFillValue=None,
+    valueScale=pcr.Scalar,
+    select=None,
+    yearSubstitution=False,
 ):
 
     if ncFile not in filecache:
@@ -481,14 +548,14 @@ def netcdf2PCRobjClone(
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
-    idx, date = _timeIndex(f, dateInput, useDoy)
+    idx, date = _timeIndex(f, dateInput, useDoy, select, yearSubstitution)
 
     if f.variables[varName].ndim == 4:
         logger.warning("%s (%s) is 4D; last two dims read as lat/lon", ncFile, varName)
         index = (int(idx), 0)
     else:
         index = (int(idx),)
-    outPCR = _readOntoClone(ncFile, varName, index, specificFillValue)
+    outPCR = _readOntoClone(ncFile, varName, index, specificFillValue, valueScale)
 
     if useDoy == "daily_per_monthly_file":
         # close the file on the last day of the month and remove it from the cache
@@ -623,6 +690,7 @@ def getPCRasterGridAttributes(mapFile):
         "cols": int(attributes["columns"]),
         "xUL": float(attributes["xUL"]),
         "yUL": float(attributes["yUL"]),
+        "cellRepr": attributes["cell_repr"],
     }
 
 
@@ -633,12 +701,14 @@ def gdalwarpPCR(input, output, tmpDir, isLddMap=False, isNominalMap=False):
     cOut, err = subprocess.Popen(
         co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
     ).communicate()
-    # convert files to tif
-    co = f"gdal_translate -ot Float64 {input} {tmpDir}tmp_inp.tif"
-    if isLddMap:
-        co = f"gdal_translate -ot Int32 {input} {tmpDir}tmp_inp.tif"
-    if isNominalMap:
-        co = f"gdal_translate -ot Int32 {input} {tmpDir}tmp_inp.tif"
+    # convert files to tif; the PCRaster driver cannot write Float64
+    integerMap = (
+        isLddMap
+        or isNominalMap
+        or getPCRasterGridAttributes(input)["cellRepr"] in ("small", "large")
+    )
+    dataType = "Int32" if integerMap else "Float32"
+    co = f"gdal_translate -ot {dataType} {input} {tmpDir}tmp_inp.tif"
     cOut, err = subprocess.Popen(
         co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
     ).communicate()
@@ -651,11 +721,11 @@ def gdalwarpPCR(input, output, tmpDir, isLddMap=False, isNominalMap=False):
     yres = cloneAtt["cellsize"]
     te = f"-te {xmin} {ymin} {xmax} {ymax} "
     tr = f"-tr {xres} {yres} "
+    # nodata is taken from the input; a fixed float value missed integer MVs
     co = (
         "gdalwarp "
         + te
         + tr
-        + " -srcnodata -3.4028234663852886e+38 -dstnodata mv "
         + str(tmpDir)
         + "tmp_inp.tif "
         + str(tmpDir)

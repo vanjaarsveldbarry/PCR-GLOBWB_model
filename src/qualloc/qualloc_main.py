@@ -17,7 +17,6 @@ from qualloc.initial_conditions_handler import (
     get_initial_conditions,
 )
 from qualloc.qualloc_reporting import qualloc_report_initial_conditions
-from qualloc.spatialDataSet2PCR import cloneAttributes
 from qualloc.surfacewater import surfacewater
 from qualloc.water_management import (
     very_small_number,
@@ -131,8 +130,6 @@ class qualloc_model(object):
 
         self.model_time = model_time
 
-        self.model_configuration.clone_attributes = cloneAttributes()
-
         logger.info(
             str.join(
                 "\n",
@@ -166,7 +163,6 @@ class qualloc_model(object):
             filename=self.model_configuration.general["clone"],
             variablename=self.model_configuration.general["landmask_ncvariable"],
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Boolean,
         )
 
@@ -174,7 +170,6 @@ class qualloc_model(object):
             filename=self.model_configuration.general["cellarea"],
             variablename=self.model_configuration.general["cellarea_ncvariable"],
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
 
@@ -252,7 +247,6 @@ class qualloc_model(object):
             filename=self.model_configuration.surfacewater["ldd"],
             variablename=ncvariable_name(self.model_configuration.surfacewater, "ldd"),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Ldd,
         )
         channel_gradient = read_file_entry(
@@ -261,7 +255,6 @@ class qualloc_model(object):
                 self.model_configuration.surfacewater, "channel_gradient"
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
         channel_width = read_file_entry(
@@ -270,7 +263,6 @@ class qualloc_model(object):
                 self.model_configuration.surfacewater, "channel_width"
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
         channel_length = read_file_entry(
@@ -279,7 +271,6 @@ class qualloc_model(object):
                 self.model_configuration.surfacewater, "channel_length"
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
         mannings_n = read_file_entry(
@@ -288,7 +279,6 @@ class qualloc_model(object):
                 self.model_configuration.surfacewater, "mannings_n"
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
 
@@ -345,7 +335,6 @@ class qualloc_model(object):
                 "groundwater_allocation_zones",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Nominal,
         )
         surfacewater_allocation_zones = read_file_entry(
@@ -357,7 +346,6 @@ class qualloc_model(object):
                 "surfacewater_allocation_zones",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Nominal,
         )
         desalwater_allocation_zones = read_file_entry(
@@ -368,7 +356,6 @@ class qualloc_model(object):
                 self.model_configuration.water_management, "desalwater_allocation_zones"
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Nominal,
         )
         groundwater_allocation_zones = pcr.ifthen(
@@ -407,7 +394,6 @@ class qualloc_model(object):
                 "groundwater_withdrawal_points",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Ordinal,
         )
         surfacewater_withdrawal_points = read_file_entry(
@@ -419,7 +405,6 @@ class qualloc_model(object):
                 "surfacewater_withdrawal_points",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Ordinal,
         )
         desalwater_withdrawal_points = read_file_entry(
@@ -431,7 +416,6 @@ class qualloc_model(object):
                 "desalwater_withdrawal_points",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Ordinal,
         )
         groundwater_withdrawal_points = pcr.cover(groundwater_withdrawal_points, 0)
@@ -448,7 +432,6 @@ class qualloc_model(object):
                 "groundwater_withdrawal_capacity",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
         surfacewater_withdrawal_capacity = read_file_entry(
@@ -460,7 +443,6 @@ class qualloc_model(object):
                 "surfacewater_withdrawal_capacity",
             ),
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
 
@@ -570,7 +552,6 @@ class qualloc_model(object):
             ],
             variablename="groundwater_update_weight",
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
         surfacewater_update_weight = read_file_entry(
@@ -579,7 +560,6 @@ class qualloc_model(object):
             ],
             variablename="surfacewater_update_weight",
             inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Scalar,
         )
 
@@ -591,7 +571,6 @@ class qualloc_model(object):
                 filename=self.model_configuration.water_management[var],
                 variablename=var,
                 inputpath=self.model_configuration.general["inputpath"],
-                clone_attributes=self.model_configuration.clone_attributes,
                 datatype=pcr.Scalar,
             )
 
@@ -627,7 +606,6 @@ class qualloc_model(object):
                         filename=self.model_configuration.water_management[key],
                         variablename=self.model_configuration.water_management[key],
                         inputpath=self.model_configuration.general["inputpath"],
-                        clone_attributes=self.model_configuration.clone_attributes,
                         datatype=pcr.Scalar,
                     )
 
@@ -803,7 +781,6 @@ class qualloc_model(object):
                     filename=limit,
                     variablename=ncvariable,
                     inputpath=self.model_configuration.general["inputpath"],
-                    clone_attributes=self.model_configuration.clone_attributes,
                     datatype=pcr.Scalar,
                 )
 
@@ -1020,7 +997,6 @@ class qualloc_model(object):
                                 "ncvariable"
                             ],
                             inputpath=self.water_quality_forcing_info[key]["inputpath"],
-                            clone_attributes=self.model_configuration.clone_attributes,
                             datatype=pcr.Scalar,
                             date=date,
                             date_selection_method="nearest",
@@ -1082,7 +1058,6 @@ class qualloc_model(object):
                 filename=self.model_configuration.water_management[file_name],
                 variablename=file_name,
                 inputpath=self.model_configuration.general["inputpath"],
-                clone_attributes=self.model_configuration.clone_attributes,
                 datatype=pcr.Scalar,
                 date=date,
                 date_selection_method="exact",
@@ -1120,7 +1095,6 @@ class qualloc_model(object):
                             ],
                             variablename=var,
                             inputpath=self.model_configuration.general["inputpath"],
-                            clone_attributes=self.model_configuration.clone_attributes,
                             datatype=dtype,
                             date=datetime.datetime(date.year, 1, 1),
                             date_selection_method="exact",

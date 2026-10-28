@@ -7,9 +7,9 @@ from copy import deepcopy
 
 import pcraster as pcr
 
+from common import virtualOS as vos
 from qualloc.file_handler import compose_filename, file_is_nc, read_file_entry
 from qualloc.model_time import match_date_by_julian_number
-from qualloc.netCDF_recipes import get_nc_dates
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def test_timed_netcdf(filename, path="", time_interval_days=365):
     if file_is_nc(filename) and file_exists:
 
         # netCDF file: get the dates
-        nc_dates = get_nc_dates(filename)
+        nc_dates = vos.getNcDates(filename)
 
         # decide on the content
         for ix in range(1, len(nc_dates)):
@@ -132,7 +132,6 @@ appropriate key and value pairs.
                                     filename=entry,
                                     variablename=variablename,
                                     inputpath=model_configuration.inputpath,
-                                    clone_attributes=model_configuration.clone_attributes,
                                     date=nc_date,
                                     date_selection_method="exact",
                                     allow_year_substitution=True,
@@ -156,7 +155,6 @@ appropriate key and value pairs.
                                 filename=entry,
                                 variablename=variablename,
                                 inputpath=model_configuration.inputpath,
-                                clone_attributes=model_configuration.clone_attributes,
                                 date=nc_date,
                                 date_selection_method=date_selection_method,
                                 allow_year_substitution=allow_year_substitution,

@@ -1,15 +1,11 @@
 import logging
 import os
-import sys
+import shutil
+import tempfile
 
 import pcraster as pcr
 
-from qualloc.netCDF_recipes import netCDF_file_info
-from qualloc.spatialDataSet2PCR import (
-    compareSpatialAttributes,
-    spatialAttributes,
-    spatialDataSet,
-)
+from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
 
@@ -39,27 +35,9 @@ conversion_methods = {
     "Directional": float,
     "Ldd": int,
 }
-datatypes = {
-    "Scalar": "FLOAT32",
-    "Nominal": "INT32",
-    "Boolean": "BYTE",
-    "Ordinal": "FLOAT32",
-    "Directional": "FLOAT32",
-    "Ldd": "INT32",
-}
 
-
-resample_methods = {
-    "Scalar": "bilinear",
-    "Nominal": "nearest",
-    "Boolean": "nearest",
-    "Ordinal": "nearest",
-    "Directional": "bicubic",
-    "Ldd": "nearest",
-}
-
-# cache of netCDF files
-nc_info = netCDF_file_info()
+# netCDF files opened for QUAlloc; they share vos.filecache with PCR-GLOBWB
+nc_files_read = set()
 
 
 # generic functions to process files
@@ -125,7 +103,6 @@ def read_file_entry(
     variablename,
     inputpath="",
     file_subst_args=(),
-    clone_attributes=None,
     forced_non_spatial=False,
     datatype=pcr.Scalar,
     date=None,
@@ -153,7 +130,6 @@ given date. This may concern spatial information or single entries.
                             latter is a relative path (default: '');
     file_subst_args:        file substitution arguments that are used to repl-
                             enish the file name if needed (default: ());
-    clone_attributes:       clone attributes that define the area of interest;
     forced_non_spatial:     boolean forcing multidimensional data to be read
                             as non-spatial, applies to netCDF files only or in
                             case of the conversion of numerical values
@@ -189,67 +165,34 @@ given date. This may concern spatial information or single entries.
 
     if existing_file and file_is_nc(filename):
 
-        # netCDF: read from the cache
-        var_out = nc_info.read_nc_field(
-            filename,
-            variablename,
-            clone_attributes=clone_attributes,
-            forced_non_spatial=forced_non_spatial,
-            datatype=datatype,
-            date=date,
-            date_selection_method=date_selection_method,
-            allow_year_substitution=allow_year_substitution,
-        )
+        nc_files_read.add(filename)
+        if vos._hasTimeAxis(filename, variablename):
+            # QUAlloc only substitutes years when before/after finds no date at all;
+            # its one before/after caller (initial conditions) always asks for a date
+            # that has one, so substitution is only passed on with exact
+            var_out = vos.netcdf2PCRobjClone(
+                filename,
+                variablename,
+                dateInput=date,
+                valueScale=datatype,
+                select=date_selection_method.lower(),
+                yearSubstitution=bool(allow_year_substitution)
+                and date_selection_method.lower() == "exact",
+            )
+        else:
+            var_out = vos.netcdf2PCRobjCloneWithoutTime(
+                filename, variablename, valueScale=datatype
+            )
 
     elif existing_file and file_is_pcr(filename):
 
-        # PCRaster file
-
-        if isinstance(clone_attributes, NoneType):
-
-            # PCRaster maps can only be processed if clone attributes are passed
-            message_str = "no clone attributes are provided to process the PCRaster map"
-            logger.error(message_str)
-            sys.exit(message_str)
-
-        data_attributes = spatialAttributes(filename)
-        fits_extent, same_resolution, x_resample_ratio, y_resample_ratio = (
-            compareSpatialAttributes(data_attributes, clone_attributes)
-        )
-
-        file_ext = os.path.splitext(filename)[1]
-        same_clone = fits_extent and same_resolution and file_ext == ".map"
-
-        resample_method = resample_methods[datatype_str]
-
-        if same_clone:
-
-            var_out = pcr.readmap(filename)
-            conversion_method = getattr(pcr, datatype_str.lower())
-            var_out = conversion_method(var_out)
-
-        else:
-
-            # read the variable using gdal_translate
-            var_out = getattr(
-                spatialDataSet(
-                    variablename,
-                    filename,
-                    datatypes[datatype_str],
-                    datatype,
-                    clone_attributes.xLL,
-                    clone_attributes.xUR,
-                    clone_attributes.yLL,
-                    clone_attributes.yUR,
-                    clone_attributes.xResolution,
-                    clone_attributes.yResolution,
-                    pixels=clone_attributes.numberCols,
-                    lines=clone_attributes.numberRows,
-                    resampleMethod=resample_method,
-                ),
-                variablename,
-            )
-            var_out = getattr(pcr, datatype_str.lower())(var_out)
+        # readPCRmapClone empties and recreates tmpDir, so it gets one of its own
+        tmp_dir = tempfile.mkdtemp(prefix="qualloc_") + os.sep
+        try:
+            var_out = vos.readPCRmapClone(filename, tmp_dir)
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        var_out = getattr(pcr, datatype_str.lower())(var_out)
 
         # output available: log the message
         message_str = f"value of {variablename} read from {filename}"
@@ -282,9 +225,14 @@ given date. This may concern spatial information or single entries.
 
 
 def close_nc_cache():
-    """closes the cache of netCDF input files"""
+    """closes the netCDF input files opened for QUAlloc"""
 
-    nc_info.close_cache()
+    for filename in nc_files_read:
+        f = vos.filecache.pop(filename, None)
+        if f is not None and f.isopen():
+            f.close()
+        vos._gridcache.pop(filename, None)
+    nc_files_read.clear()
 
     return None
 

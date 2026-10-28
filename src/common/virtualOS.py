@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 # file cache to reduce opening and closing files
 filecache = dict()
+# NcGrid per file in filecache; an entry must be dropped when its file is closed
+_gridcache = dict()
 
 # global variables
 MV = 1e20
@@ -115,6 +117,14 @@ class NcGrid:
             slice(xIdxSta, math.ceil(xIdxSta + clone["cols"] / factor)),
             factor,
         )
+
+
+def _ncGrid(ncFile):
+    if ncFile not in _gridcache:
+        if ncFile not in filecache:
+            filecache[ncFile] = nc.Dataset(ncFile)
+        _gridcache[ncFile] = NcGrid.fromDataset(filecache[ncFile])
+    return _gridcache[ncFile]
 
 
 def readUpstreamDischarge(
@@ -221,16 +231,12 @@ def readDownscalingMeteo(
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 
-    if ncFile in list(filecache.keys()):
-        f = filecache[ncFile]
-
-    else:
-        f = nc.Dataset(ncFile)
-        filecache[ncFile] = f
-
+    if ncFile not in filecache:
+        filecache[ncFile] = nc.Dataset(ncFile)
+    f = filecache[ncFile]
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-    grid = NcGrid.fromDataset(f)
+    grid = _ncGrid(ncFile)
     ncLat, ncLon = grid.lat, grid.lon
 
     if dateInput is None:
@@ -450,16 +456,9 @@ def checkVariableInNC(ncFile, varName):
 
     logger.debug(f"Checking whether {varName} is defined in {ncFile}")
 
-    if ncFile in list(filecache.keys()):
-        f = filecache[ncFile]
-
-    else:
-        f = nc.Dataset(ncFile)
-        filecache[ncFile] = f
-
-    varName = str(varName)
-
-    return varName in list(f.variables.keys())
+    if ncFile not in filecache:
+        filecache[ncFile] = nc.Dataset(ncFile)
+    return str(varName) in filecache[ncFile].variables
 
 
 @_retryIfRemote
@@ -477,11 +476,13 @@ def netcdf2PCRobjCloneWithoutTime(
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 
-    f = nc.Dataset(ncFile)
+    if ncFile not in filecache:
+        filecache[ncFile] = nc.Dataset(ncFile)
+    f = filecache[ncFile]
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
-    yslice, xslice, factor = NcGrid.fromDataset(f).cloneWindow()
+    yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
 
     cropData = f.variables[varName][yslice, xslice]
 
@@ -510,8 +511,6 @@ def netcdf2PCRobjCloneWithoutTime(
                 float(f.variables[varName].missing_value),
             )
 
-    f.close()
-
     return outPCR
 
 
@@ -527,13 +526,9 @@ def netcdf2PCRobjClone(
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 
-    if ncFile in list(filecache.keys()):
-        f = filecache[ncFile]
-
-    else:
-        f = nc.Dataset(ncFile)
-        filecache[ncFile] = f
-
+    if ncFile not in filecache:
+        filecache[ncFile] = nc.Dataset(ncFile)
+    f = filecache[ncFile]
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
@@ -664,7 +659,7 @@ def netcdf2PCRobjClone(
     )
     logger.debug(f"Using the datetime {date_string}")
 
-    yslice, xslice, factor = NcGrid.fromDataset(f).cloneWindow()
+    yslice, xslice, factor = _ncGrid(ncFile).cloneWindow()
 
     # retrieve the data slice from the netCDF file
     if f.variables[varName].ndim == 4:
@@ -706,6 +701,7 @@ def netcdf2PCRobjClone(
         if tomorrow.day == 1:
             f.close()
             del filecache[ncFile]
+            _gridcache.pop(ncFile, None)
 
     return outPCR
 

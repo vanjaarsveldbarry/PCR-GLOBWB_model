@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+from dataclasses import dataclass
 
 import netCDF4 as nc
 import numpy as np
@@ -67,6 +68,53 @@ def _resolveVarName(f, varName):
     if varName not in f.variables and aliases.get(varName) in f.variables:
         return aliases[varName]
     return varName
+
+
+@dataclass(frozen=True, eq=False)
+class NcGrid:
+    # axes as read from the file, unconverted: a dtype change can move the argmin
+    # in cloneWindow and so change which cells are read
+    lat: np.ndarray
+    lon: np.ndarray
+
+    @classmethod
+    def fromDataset(cls, f):
+        # latitude/longitude take precedence over lat/lon when a file has both
+        v = f.variables
+        lat = v["latitude"] if "latitude" in v else v["lat"]
+        lon = v["longitude"] if "longitude" in v else v["lon"]
+        return cls(lat[:], lon[:])
+
+    @functools.cached_property
+    def attributes(self):
+        cellsize = float(self.lat[0] - self.lat[1])
+        return {
+            "cellsize": cellsize,
+            "rows": len(self.lat),
+            "cols": len(self.lon),
+            "xUL": float(self.lon[0]) - 0.5 * cellsize,
+            "yUL": float(self.lat[0]) + 0.5 * cellsize,
+        }
+
+    def cloneWindow(self):
+        """Return (yslice, xslice, factor) covering the clone; factor is the number of
+        clone cells per file cell, for regridData2FinerGrid."""
+        if isSameClone(self.attributes):
+            return slice(None), slice(None), 1
+
+        clone = getCloneAttributes()
+        cellsize = self.attributes["cellsize"]
+        factor = int(round(cellsize / float(clone["cellsize"])))
+        if factor > 1:
+            logger.debug(f"Resampling cell size {cellsize} to {clone['cellsize']}")
+
+        xIdxSta = np.argmin(np.abs(self.lon - (clone["xUL"] + 0.5 * cellsize)))
+        yIdxSta = np.argmin(np.abs(self.lat - (clone["yUL"] - 0.5 * cellsize)))
+        return (
+            slice(yIdxSta, math.ceil(yIdxSta + clone["rows"] / factor)),
+            slice(xIdxSta, math.ceil(xIdxSta + clone["cols"] / factor)),
+            factor,
+        )
 
 
 def readUpstreamDischarge(
@@ -180,15 +228,10 @@ def readDownscalingMeteo(
         f = nc.Dataset(ncFile)
         filecache[ncFile] = f
 
-    if LatitudeLongitude:
-        try:
-            f.variables["lat"] = f.variables["latitude"]
-            f.variables["lon"] = f.variables["longitude"]
-        except Exception:
-            pass
-
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
+    grid = NcGrid.fromDataset(f)
+    ncLat, ncLon = grid.lat, grid.lon
 
     if dateInput is None:
         logger.debug("Using the first time step in the netcdf file.")
@@ -323,8 +366,7 @@ def readDownscalingMeteo(
     xULClone = attributeClone["xUL"]
     yULClone = attributeClone["yUL"]
     # attributes of the input (netCDF)
-    cellsizeInput = f.variables["lat"][0] - f.variables["lat"][1]
-    cellsizeInput = float(cellsizeInput)
+    cellsizeInput = grid.attributes["cellsize"]
 
     # correction for files with an additional level dimension (e.g. WFDEI forcing: time, height/level, lat, lon)
     if f.variables[varName].ndim == 4:
@@ -340,29 +382,19 @@ def readDownscalingMeteo(
     factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
 
     # crop to the clone map
-    minX = min(abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput)))
+    minX = min(abs(ncLon[:] - (xULClone + 0.5 * cellsizeInput)))
     xIdxSta = (
-        int(
-            np.where(
-                abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput)) == minX
-            )[0]
-        )
-        - 1
+        int(np.where(abs(ncLon[:] - (xULClone + 0.5 * cellsizeInput)) == minX)[0]) - 1
     )
     if xIdxSta == -1:
         xIdxSta = 0
 
     xIdxEnd = int(math.ceil((xIdxSta + 1) + colsClone / (factor))) + 1
 
-    minY = min(abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput)))
+    minY = min(abs(ncLat[:] - (yULClone - 0.5 * cellsizeInput)))
 
     yIdxSta = (
-        int(
-            np.where(
-                abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput)) == minY
-            )[0]
-        )
-        - 1
+        int(np.where(abs(ncLat[:] - (yULClone - 0.5 * cellsizeInput)) == minY)[0]) - 1
     )
 
     yIdxEnd = int(math.ceil((yIdxSta + 1) + rowsClone / (factor))) + 1
@@ -383,8 +415,8 @@ def readDownscalingMeteo(
         cropData,
         dims=["latitude", "longitude"],
         coords=dict(
-            latitude=f.variables["lat"][yIdxSta:yIdxEnd],
-            longitude=f.variables["lon"][xIdxSta:xIdxEnd],
+            latitude=ncLat[yIdxSta:yIdxEnd],
+            longitude=ncLon[xIdxSta:xIdxEnd],
         ),
     ).sortby("latitude")
 
@@ -449,41 +481,7 @@ def netcdf2PCRobjCloneWithoutTime(
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
-    if LatitudeLongitude:
-        try:
-            f.variables["lat"] = f.variables["latitude"]
-            f.variables["lon"] = f.variables["longitude"]
-        except Exception:
-            pass
-
-    attributeClone = getCloneAttributes()
-    cellsizeClone = attributeClone["cellsize"]
-    rowsClone = attributeClone["rows"]
-    colsClone = attributeClone["cols"]
-    xULClone = attributeClone["xUL"]
-    yULClone = attributeClone["yUL"]
-    attributeInput = getNetcdfGridAttributes(f)
-    cellsizeInput = attributeInput["cellsize"]
-    sameClone = isSameClone(attributeInput)
-
-    factor = 1
-    yslice = slice(None)
-    xslice = slice(None)
-    if not sameClone:
-
-        factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
-        if factor > 1:
-            logger.debug(f"Resampling cell size {cellsizeInput} to {cellsizeClone}")
-
-        diffX = np.abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput))
-        xIdxSta = np.argmin(diffX)
-        xIdxEnd = math.ceil(xIdxSta + colsClone / factor)
-        xslice = slice(xIdxSta, xIdxEnd)
-
-        diffY = np.abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput))
-        yIdxSta = np.argmin(diffY)
-        yIdxEnd = math.ceil(yIdxSta + rowsClone / factor)
-        yslice = slice(yIdxSta, yIdxEnd)
+    yslice, xslice, factor = NcGrid.fromDataset(f).cloneWindow()
 
     cropData = f.variables[varName][yslice, xslice]
 
@@ -535,13 +533,6 @@ def netcdf2PCRobjClone(
     else:
         f = nc.Dataset(ncFile)
         filecache[ncFile] = f
-
-    if LatitudeLongitude:
-        try:
-            f.variables["lat"] = f.variables["latitude"]
-            f.variables["lon"] = f.variables["longitude"]
-        except Exception:
-            pass
 
     varName = _resolveVarName(f, varName)
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
@@ -673,34 +664,7 @@ def netcdf2PCRobjClone(
     )
     logger.debug(f"Using the datetime {date_string}")
 
-    attributeClone = getCloneAttributes()
-    cellsizeClone = attributeClone["cellsize"]
-    rowsClone = attributeClone["rows"]
-    colsClone = attributeClone["cols"]
-    xULClone = attributeClone["xUL"]
-    yULClone = attributeClone["yUL"]
-    attributeInput = getNetcdfGridAttributes(f)
-    cellsizeInput = attributeInput["cellsize"]
-    sameClone = isSameClone(attributeInput)
-
-    factor = 1
-    yslice = slice(None)
-    xslice = slice(None)
-    if not sameClone:
-
-        factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
-        if factor > 1:
-            logger.debug(f"Resampling cell size {cellsizeInput} to {cellsizeClone}")
-
-        diffX = np.abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput))
-        xIdxSta = np.argmin(diffX)
-        xIdxEnd = math.ceil(xIdxSta + colsClone / factor)
-        xslice = slice(xIdxSta, xIdxEnd)
-
-        diffY = np.abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput))
-        yIdxSta = np.argmin(diffY)
-        yIdxEnd = math.ceil(yIdxSta + rowsClone / factor)
-        yslice = slice(yIdxSta, yIdxEnd)
+    yslice, xslice, factor = NcGrid.fromDataset(f).cloneWindow()
 
     # retrieve the data slice from the netCDF file
     if f.variables[varName].ndim == 4:
@@ -838,19 +802,6 @@ def isSameClone(attributeInput):
         float(f"{attributeClone[key]:.6g}") == float(f"{attributeInput[key]:.6g}")
         for key in attributeClone
     )
-
-
-def getNetcdfGridAttributes(f):
-    lat = f.variables["lat"]
-    lon = f.variables["lon"]
-    cellsize = float(lat[0] - lat[1])
-    return {
-        "cellsize": cellsize,
-        "rows": len(lat),
-        "cols": len(lon),
-        "xUL": float(lon[0]) - 0.5 * cellsize,
-        "yUL": float(lat[0]) + 0.5 * cellsize,
-    }
 
 
 def getPCRasterGridAttributes(mapFile):

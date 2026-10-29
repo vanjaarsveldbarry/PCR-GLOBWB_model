@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb import landCover as lc
 from pcrglobwb import parameterSoilAndTopo as parSoilAndTopo
@@ -323,10 +324,12 @@ class LandSurface(object):
             # fraction over the irrigation area
             for coverType in self.coverTypes:
                 if coverType.startswith("irr"):
-                    self.landCoverObj[coverType].irrTypeFracOverIrr = vos.getValDivZero(
-                        self.landCoverObj[coverType].fracVegCover,
-                        totalIrrAreaFrac,
-                        vos.smallNumber,
+                    self.landCoverObj[coverType].irrTypeFracOverIrr = (
+                        utils.getValDivZero(
+                            self.landCoverObj[coverType].fracVegCover,
+                            totalIrrAreaFrac,
+                            vos.smallNumber,
+                        )
                     )
 
         # initial conditions (per land cover type)
@@ -639,7 +642,7 @@ class LandSurface(object):
             self.dynamicIrrigationArea = True
 
         if self.dynamicIrrigationArea:
-            self.dynamicIrrigationAreaFile = vos.getFullPath(
+            self.dynamicIrrigationAreaFile = utils.getFullPath(
                 iniItems.landSurfaceOptions["historicalIrrigationArea"],
                 self.inputDir,
                 False,
@@ -747,7 +750,7 @@ class LandSurface(object):
         totalArea = pcr.ifthen(self.landmask, totalArea)
         totalArea = pcr.cover(totalArea, 1.0)
         check_map = totalArea - pcr.scalar(1.0)
-        a, b, c = vos.getMinMaxMean(check_map)
+        a, b, c = utils.getMinMaxMean(check_map)
         threshold = 1e-4
         if abs(a) > threshold or abs(b) > threshold:
             logger.error("Natural area total != 1.0: Min %f Max %f Mean %f", a, b, c)
@@ -800,7 +803,7 @@ class LandSurface(object):
         totalArea = pcr.ifthen(self.landmask, totalArea)
         totalArea = pcr.cover(totalArea, 1.0)
         totalArea = pcr.ifthen(self.landmask, totalArea)
-        a, b, c = vos.getMinMaxMean(totalArea - pcr.scalar(1.0))
+        a, b, c = utils.getMinMaxMean(totalArea - pcr.scalar(1.0))
         threshold = 1e-4
         if abs(a) > threshold or abs(b) > threshold:
             logger.error("Land cover total != 1.0: Min %f Max %f Mean %f", a, b, c)
@@ -1730,7 +1733,7 @@ class LandSurface(object):
 
         # check the water balance
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [
                     self.desalinationAllocation,
                     self.allocSurfaceWaterAbstract,
@@ -1791,7 +1794,7 @@ class LandSurface(object):
                     old_fraction = self.landCoverObj[coverType].previousFracVegCover
                     new_fraction = self.landCoverObj[coverType].fracVegCover
 
-                    correction = moving_states * vos.getValDivZero(
+                    correction = moving_states * utils.getValDivZero(
                         pcr.max(0.0, new_fraction - old_fraction),
                         moving_fraction,
                         vos.smallNumber,
@@ -1799,7 +1802,7 @@ class LandSurface(object):
 
                     new_states = pcr.ifthenelse(
                         new_fraction > old_fraction,
-                        vos.getValDivZero(
+                        utils.getValDivZero(
                             old_states * old_fraction + correction,
                             new_fraction,
                             vos.smallNumber,
@@ -1818,7 +1821,7 @@ class LandSurface(object):
 
                 # make sure that previous_state == rescaled_state
                 check_map = previous_state - rescaled_state
-                a, b, c = vos.getMinMaxMean(check_map)
+                a, b, c = utils.getMinMaxMean(check_map)
                 threshold = 1e-5
                 if abs(a) > threshold or abs(b) > threshold:
                     logger.warning("Bad state transfer: Min %f Max %f Mean %f", a, b, c)

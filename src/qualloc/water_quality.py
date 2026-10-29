@@ -3,13 +3,7 @@ import logging
 
 import pcraster as pcr
 
-from qualloc.allocation import get_zonal_total
-from qualloc.basic_functions import max_dicts, pcr_return_val_div_zero, sum_list
-from qualloc.model_time import (
-    get_weights_from_dates,
-    is_last_day_month,
-    match_date_by_julian_number,
-)
+from common import utils
 
 # water quality constituents: variable name in the configuration file as key and
 # variable name in the netCDF file as value; groundwater variables are None as
@@ -122,7 +116,7 @@ class water_quality(object):
 
                 # dates (months) and their weights
                 dates = getattr(self, f"{var_in}_dates")
-                weights = get_weights_from_dates(dates)
+                weights = utils.get_weights_from_dates(dates)
 
                 # update the long-term total per constituent and source
                 longterm_constituent_quality = getattr(self, var_in)
@@ -173,7 +167,7 @@ class water_quality(object):
 
                         dates = getattr(self, f"{var_str}_dates")
                         date_index, matched_date, sub_message_str = (
-                            match_date_by_julian_number(date, dates)
+                            utils.match_date_by_julian_number(date, dates)
                         )
 
                         longterm_constituent_quality = getattr(self, var_str)
@@ -220,7 +214,7 @@ class water_quality(object):
                 setattr(self, key, average)
 
         # update the long-term water quality on the last day of the month
-        if is_last_day_month(date):
+        if utils.is_last_day_month(date):
 
             # number of days in the month
             steps = date.day
@@ -236,8 +230,8 @@ class water_quality(object):
                     # time step to update the long-term quality (monthly)
                     update_date = datetime.datetime(date.year, date.month, 1)
                     var_dates = getattr(self, f"{var}_dates")
-                    date_index, matched_date, message_str = match_date_by_julian_number(
-                        update_date, var_dates
+                    date_index, matched_date, message_str = (
+                        utils.match_date_by_julian_number(update_date, var_dates)
                     )
 
                     # replace the value of the matched date by the weighted update; if the long-term
@@ -309,15 +303,17 @@ class water_quality(object):
                 )
 
                 # suitability fraction and total
-                suitability_per_constituent[constituent_name] = pcr_return_val_div_zero(
-                    constituent_state[constituent_name] - limit_min,
-                    limit_max - limit_min,
-                    very_small_number,
+                suitability_per_constituent[constituent_name] = (
+                    utils.pcr_return_val_div_zero(
+                        constituent_state[constituent_name] - limit_min,
+                        limit_max - limit_min,
+                        very_small_number,
+                    )
                 )
 
             # overall suitability per sector: the most unsuitable constituent dominates;
             # fractions are inverted so that one means fully suitable and zero unsuitable
-            suitability = 1 - max_dicts(suitability_per_constituent)
+            suitability = 1 - utils.max_dicts(suitability_per_constituent)
 
             suitability = pcr.ifthenelse(
                 suitability > 0.0,
@@ -388,16 +384,16 @@ class water_quality(object):
                 priority_sector = prioritization_per_sector[sector_name] ** -1
 
             # sectoral water demand per zone
-            demand_sector_area = get_zonal_total(
+            demand_sector_area = utils.get_zonal_total(
                 demand_per_sector[sector_name], zones_per_sector[sector_name]
             )
 
-            demand_total_area = get_zonal_total(
-                sum_list(list(demand_per_sector.values())),
+            demand_total_area = utils.get_zonal_total(
+                utils.sum_list(list(demand_per_sector.values())),
                 zones_per_sector[sector_name],
             )
 
-            demand_sector_fraction = pcr_return_val_div_zero(
+            demand_sector_fraction = utils.pcr_return_val_div_zero(
                 demand_sector_area, demand_total_area, very_small_number
             )
 
@@ -407,17 +403,17 @@ class water_quality(object):
             else:
                 suitability_sector = pcr.spatial(pcr.scalar(1))
 
-            suitability_sector_area = get_zonal_total(
+            suitability_sector_area = utils.get_zonal_total(
                 suitability_sector, zones_per_sector[sector_name]
             )
 
             # suitable water availability
             availability_suitable_sector = suitability_sector * availability
-            availability_suitable_sector_area = get_zonal_total(
+            availability_suitable_sector_area = utils.get_zonal_total(
                 availability_suitable_sector, zones_per_sector[sector_name]
             )
 
-            availability_sector_fraction = pcr_return_val_div_zero(
+            availability_sector_fraction = utils.pcr_return_val_div_zero(
                 suitability_sector_area,
                 availability_suitable_sector_area,
                 very_small_number,
@@ -433,9 +429,9 @@ class water_quality(object):
             weight_per_sector[sector_name] = weight
 
         # normalize the quality weights
-        weight_total = sum_list(list(weight_per_sector.values()))
+        weight_total = utils.sum_list(list(weight_per_sector.values()))
         for sector_name in sector_names:
-            weight_per_sector[sector_name] = pcr_return_val_div_zero(
+            weight_per_sector[sector_name] = utils.pcr_return_val_div_zero(
                 weight_per_sector[sector_name], weight_total, very_small_number
             )
 

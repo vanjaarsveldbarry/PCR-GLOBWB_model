@@ -8,57 +8,6 @@ import pcraster as pcr
 NoneType = type(None)
 
 
-def cloneAttributes():
-    clone = pcr.clone()
-    rows, cols, cellsize = clone.nrRows(), clone.nrCols(), clone.cellSize()
-    return types.SimpleNamespace(
-        numberRows=rows,
-        numberCols=cols,
-        xResolution=cellsize,
-        yResolution=cellsize,
-        xLL=clone.west(),
-        xUR=clone.west() + cols * cellsize,
-        yLL=clone.north() - rows * cellsize,
-        yUR=clone.north(),
-    )
-
-
-def checkCoordinate(v1, v2, delta_v1, delta_v2):
-    # check coordinates using delta_v, the minimum resolution
-    delta_v = min(abs(delta_v1), abs(delta_v2))
-    return abs(v1 - v2) < 0.5 * delta_v
-
-
-def compareSpatialAttributes(
-    sourceSpatialDataSet, targetSpatialDataSet, resamplePrecision=1.0e-5
-):
-    """Compares the attributes of two spatial datasets defined by the spatialAttributes instance\
- taking the second input as target.\
- """
-    xResampleRatio = sourceSpatialDataSet.xResolution / targetSpatialDataSet.xResolution
-    yResampleRatio = sourceSpatialDataSet.yResolution / targetSpatialDataSet.yResolution
-    # check whether the corner coordinates of the target area lie within the source extent
-    sameCoordinates = {}
-    fitsExtent = True
-    for coordKey in ["xLL", "xUR", "yLL", "yUR"]:
-        resolutionKey = f"{coordKey[:1]}Resolution"
-        sameCoordinates[coordKey] = checkCoordinate(
-            getattr(sourceSpatialDataSet, coordKey),
-            getattr(targetSpatialDataSet, coordKey),
-            getattr(sourceSpatialDataSet, resolutionKey),
-            getattr(targetSpatialDataSet, resolutionKey),
-        )
-        fitsExtent &= sameCoordinates[coordKey]
-    # if the corners do not match, determine whether the map fits the extent
-    sameResolution = (
-        abs(1 - xResampleRatio) < resamplePrecision
-        and abs(1 - yResampleRatio) < resamplePrecision
-    )
-
-    # output: whether the map must be clipped or warped, and whether it must be rescaled
-    return fitsExtent, sameResolution, xResampleRatio, yResampleRatio
-
-
 class spatialAttributes:
     # attributes of a spatial dataset
 

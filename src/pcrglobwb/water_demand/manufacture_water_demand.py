@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class ManufactureWaterDemand(object):
             logger.info("Manufacture water demand is NOT included in the calculation.")
 
         if self.manufactureWaterDemandOption:
-            self.manufactureWaterDemandFile = vos.getFullPath(
+            self.manufactureWaterDemandFile = utils.getFullPath(
                 inputPath=iniItems.waterDemandOptions["manufactureWaterDemandFile"],
                 absolutePath=self.inputDir,
                 completeFileName=False,
@@ -85,7 +86,7 @@ class ManufactureWaterDemand(object):
             self.manufactureReturnFlowFraction = pcr.max(
                 0.0,
                 1.0
-                - vos.getValDivZero(
+                - utils.getValDivZero(
                     self.manufactureNettoDemand, self.manufactureGrossDemand
                 ),
             )

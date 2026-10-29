@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class WaterManagement(object):
         if iniItems.waterManagementOptions["pumpingCapacityNC"] != "None":
             logger.info("Limit for annual regional groundwater abstraction is used.")
             self.limitRegionalAnnualGroundwaterAbstraction = True
-            self.pumpingCapacityNC = vos.getFullPath(
+            self.pumpingCapacityNC = utils.getFullPath(
                 iniItems.waterManagementOptions["pumpingCapacityNC"],
                 self.inputDir,
                 False,
@@ -78,7 +79,7 @@ class WaterManagement(object):
         ]:
             logger.info("Monthly desalination water use is included.")
             self.includeDesalination = True
-            self.desalinationWaterFile = vos.getFullPath(
+            self.desalinationWaterFile = utils.getFullPath(
                 iniItems.waterManagementOptions["desalinationWater"], self.inputDir
             )
         else:
@@ -467,7 +468,7 @@ class WaterManagement(object):
 
         # actual abstraction volume per cell (m3)
         cellAbstraction = (
-            vos.getValDivZero(cellAvlWater, zoneAvlWater, vos.smallNumber)
+            utils.getValDivZero(cellAvlWater, zoneAvlWater, vos.smallNumber)
             * zoneAbstraction
         )
         cellAbstraction = pcr.min(cellAbstraction, cellAvlWater)
@@ -488,7 +489,7 @@ class WaterManagement(object):
 
         # water allocated to meet the demand (m3)
         cellAllocation = (
-            vos.getValDivZero(cellVolDemand, zoneVolDemand, vos.smallNumber)
+            utils.getValDivZero(cellVolDemand, zoneVolDemand, vos.smallNumber)
             * zoneAbstraction
         )
         cellAllocation = pcr.min(cellAllocation, cellVolDemand)
@@ -498,7 +499,7 @@ class WaterManagement(object):
         cellAllocation = cellAllocation + localAllocation
 
         if debug_water_balance and zone_area is not None:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [
                     pcr.cover(
                         pcr.areatotal(cellAbstraction, allocation_zones) / zone_area,
@@ -639,7 +640,7 @@ class WaterManagement(object):
             allocated_demand_per_sector[sector_name] = pcr.ifthenelse(
                 total_remaining_demand_volume > 0.0,
                 totalVolWaterAllocation
-                * vos.getValDivZero(
+                * utils.getValDivZero(
                     sectoral_remaining_demand_volume[sector_name],
                     total_remaining_demand_volume,
                 ),
@@ -673,7 +674,7 @@ class WaterManagement(object):
                 # allocation per sector over the total allocation (total zonal allocation = total zonal abstraction)
                 allocated_withdrawal_per_sector[sector_name] = (
                     totalVolCellWaterAbstraction
-                    * vos.getValDivZero(
+                    * utils.getValDivZero(
                         zonal_allocated_withdrawal_per_sector[sector_name],
                         totalVolZoneAbstraction,
                     )
@@ -1098,7 +1099,7 @@ class WaterManagement(object):
             # remaining pumping capacity per cell (m3), downscaled using potVolGroundwaterAbstract
             remainingPixelAnnualGroundwaterAbstractionLimit = (
                 remainingRegionalAnnualGroundwaterAbstractionLimit
-                * vos.getValDivZero(
+                * utils.getValDivZero(
                     self.potVolGroundwaterAbstract,
                     pcr.areatotal(
                         self.potVolGroundwaterAbstract,
@@ -1376,7 +1377,7 @@ class WaterManagement(object):
             # (to minimize unrealistic fossil groundwater abstraction): supply from the average recharge
             # (baseflow) and non-fossil groundwater allocation (m3)
             nonFossilGroundwaterSupply = pcr.max(
-                pcr.max(0.0, routing.avgBaseflow * vos.secondsPerDay()),
+                pcr.max(0.0, routing.avgBaseflow * utils.secondsPerDay()),
                 groundwater.avgNonFossilAllocationShort * self.cellArea,
                 groundwater.avgNonFossilAllocation * self.cellArea,
             )
@@ -1384,7 +1385,9 @@ class WaterManagement(object):
             # irrigation supply from non-fossil groundwater (m3)
             nonFossilIrrigationGroundwaterSupply = (
                 nonFossilGroundwaterSupply
-                * vos.getValDivZero(remainingIrrigationLivestock, remainingTotalDemand)
+                * utils.getValDivZero(
+                    remainingIrrigationLivestock, remainingTotalDemand
+                )
             )
 
             # corrected irrigation and livestock demand (m3)
@@ -1573,7 +1576,7 @@ class WaterManagement(object):
         else:
             logger.debug("Water demand can only be satisfied by local source.")
 
-        swAbstractionFraction = vos.getValDivZero(
+        swAbstractionFraction = utils.getValDivZero(
             averageUpstreamInput,
             averageUpstreamInput + averageBaseflowInput,
             vos.smallNumber,

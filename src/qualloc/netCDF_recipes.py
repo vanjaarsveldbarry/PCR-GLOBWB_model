@@ -1,4 +1,3 @@
-import datetime
 import logging
 import sys
 from copy import deepcopy
@@ -8,11 +7,8 @@ import netCDF4 as nc
 import numpy as np
 import pcraster as pcr
 
-from qualloc.spatialDataSet2PCR import (
-    compareSpatialAttributes,
-    spatialAttributes,
-    spatialDataSet,
-)
+from common import utils
+from qualloc.spatialDataSet2PCR import spatialAttributes, spatialDataSet
 
 logger = logging.getLogger(__name__)
 
@@ -70,124 +66,6 @@ default_least_significant_digit = None
 default_fill_value = -999.9
 exclude_list = ["group", "set", "_", "__"]
 test_verbose = False
-
-
-def update_year_of_date(date, new_year, dates):
-    """
-update_year_of_date: function that finds the offset in days between the date \
-specified and the same day in the new year specified and applies it subsequently \
-to dates, which can be an iterable or a single date. Returns a copy of dates \
-with the years changed accordingly.
-
-"""
-    seq_type = True
-    if isinstance(dates, list):
-        new_dates = dates[:]
-
-    elif isinstance(dates, np.ndarray):
-        new_dates = deepcopy(dates)
-        new_dates = new_dates.ravel()
-
-    else:
-        new_dates = [dates]
-        seq_type = False
-
-    # check the data type
-    if not isinstance(new_dates[0], datetime.datetime):
-        "dates have not the correct datetime datetime format"
-
-    date_offset = datetime.datetime(new_year, date.month, date.day) - datetime.datetime(
-        date.year, date.month, date.day
-    )
-
-    for ix in range(len(new_dates)):
-
-        new_dates[ix] = new_dates[ix] + date_offset
-
-    # single entry or sequence
-    if not seq_type:
-        new_dates = new_dates[0]
-
-    return new_dates
-
-
-def substitute_years_of_dates(dates, date):
-    """Returns a copy of a list of dates in which the years have been updated
-    to include the year of the specified date"""
-
-    # nearest date and available years
-    date_index = get_date_index(date, dates, "nearest")
-    nearest_date = dates[date_index]
-
-    return update_year_of_date(nearest_date, date.year, dates)
-
-
-def get_date_index(date, dates, date_selection_method, substituted_dates=False):
-    """
-    get_date_index: function that returns the position of the date specified in an array of dates,
-    following the index date_selection_methodion method specified: exact, before, after, nearest.
-    This function reproduces the date2index function of the netCDF4 package but
-    circumvents the problem that the original function cannot read from a standard dictionary.
-
-    """
-
-    # array with time deltas and indices
-    time_delta = dates.copy()
-
-    if not isinstance(dates[0], type(date)):
-        for ix in range(len(time_delta)):
-            time_delta[ix] = datetime.datetime(
-                time_delta[ix].year,
-                time_delta[ix].month,
-                time_delta[ix].day,
-                time_delta[ix].hour,
-                time_delta[ix].minute,
-                time_delta[ix].second,
-                time_delta[ix].microsecond,
-            )
-    time_delta = time_delta - date
-    date_index = np.arange(time_delta.size)
-
-    # masked array operation for Python 3.x and higher
-    if isinstance(time_delta, np.ma.core.MaskedArray):
-        time_delta = np.array(time_delta.tolist())
-
-    # find the zero value
-    if (
-        np.size(dates[time_delta == datetime.timedelta(0)]) > 0
-        and not substituted_dates
-    ):
-        return np.arange(dates.size)[time_delta == datetime.timedelta(0)][0]
-
-    elif date_selection_method == "exact":
-        return None
-
-    elif date_selection_method == "before":
-        mask = time_delta < datetime.timedelta(0)
-
-        if time_delta[mask].size > 0:
-            mask_value = time_delta[mask].max()
-            return date_index[time_delta == mask_value][0]
-        else:
-            return None
-
-    elif date_selection_method == "after":
-        mask = time_delta > datetime.timedelta(0)
-        if time_delta[mask].size > 0:
-            mask_value = time_delta[mask].min()
-            return date_index[time_delta == mask_value][0]
-        else:
-            return None
-
-    elif date_selection_method == "nearest":
-        time_delta = np.abs(time_delta)
-        return np.arange(dates.size)[time_delta == time_delta.min()][0]
-
-    else:
-        sys.exit(
-            "index date_selection_method %s is not allowed or does not yield a result"
-            % date_selection_method
-        )
 
 
 def get_nc_object_attributes(obj, exclude_list=[], exclude_class_objects=True):
@@ -802,7 +680,7 @@ holding netCDF information to facilitate access."""
                                 same_resolution,
                                 x_resample_ratio,
                                 y_resample_ratio,
-                            ) = compareSpatialAttributes(
+                            ) = utils.compareSpatialAttributes(
                                 data_attributes, clone_attributes
                             )
                             same_clone = fits_extent and same_resolution
@@ -1004,7 +882,7 @@ depending on the type of match specified.
             # year substitution is allowed: find the corresponding match
             else:
 
-                date_index = get_date_index(date, dates, date_selection_method)
+                date_index = utils.get_date_index(date, dates, date_selection_method)
 
                 # no match found: substitute the date
                 if isinstance(date_index, NoneType):
@@ -1028,12 +906,14 @@ depending on the type of match specified.
                     if date_selection_method == "exact":
                         date_selection_method = "nearest"
 
-                    replacement_date = update_year_of_date(date, replacement_year, date)
+                    replacement_date = utils.update_year_of_date(
+                        date, replacement_year, date
+                    )
 
                     # replace the year of the dates
-                    dates = substitute_years_of_dates(dates, replacement_date)
+                    dates = utils.substitute_years_of_dates(dates, replacement_date)
 
-                    date_index = get_date_index(
+                    date_index = utils.get_date_index(
                         date, dates, date_selection_method, substituted_dates=True
                     )
 
@@ -1072,7 +952,9 @@ depending on the type of match specified.
                     )
 
                     fits_extent, same_resolution, x_resample_ratio, y_resample_ratio = (
-                        compareSpatialAttributes(data_attributes, clone_attributes)
+                        utils.compareSpatialAttributes(
+                            data_attributes, clone_attributes
+                        )
                     )
 
                     # halt if the resolution differs

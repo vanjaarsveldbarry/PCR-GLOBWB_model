@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 
-from common import virtualOS as vos
+from common import utils
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class SpinUp(object):
         if "spinUpOutputDir" in list(iniItems.globalOptions.keys()):
             self.outNCDir = str(iniItems.outNCDir)
             if iniItems.globalOptions["spinUpOutputDir"] not in ["None", "False"]:
-                self.spinUpOutputDir = vos.getFullPath(
+                self.spinUpOutputDir = utils.getFullPath(
                     iniItems.globalOptions["spinUpOutputDir"], self.outNCDir
                 )
             if iniItems.globalOptions["spinUpOutputDir"] == "True":
@@ -52,7 +52,7 @@ class SpinUp(object):
 
         if self.numberOfLayers == 2:
             # (m3)
-            return vos.getMapVolume(
+            return utils.getMapVolume(
                 state["landSurface"]["topWaterLayer"]
                 + state["landSurface"]["storUpp"]
                 + +state["landSurface"]["storLow"]
@@ -62,7 +62,7 @@ class SpinUp(object):
 
         if self.numberOfLayers == 3:
             # (m3)
-            return vos.getMapVolume(
+            return utils.getMapVolume(
                 state["landSurface"]["topWaterLayer"]
                 + state["landSurface"]["storUpp000005"]
                 + state["landSurface"]["storUpp005030"]
@@ -73,18 +73,18 @@ class SpinUp(object):
 
     def groundwaterStorageVolume(self, state, cellAreaMap):
         # (m3)
-        return vos.getMapVolume(state["groundwater"]["storGroundwater"], cellAreaMap)
+        return utils.getMapVolume(state["groundwater"]["storGroundwater"], cellAreaMap)
 
     def channelStorageVolume(self, state, cellAreaMap):
         # (m3)
-        return vos.getMapVolume(state["routing"]["channelStorage"], cellAreaMap)
+        return utils.getMapVolume(state["routing"]["channelStorage"], cellAreaMap)
 
     def totalStorageVolume(self, state, cellAreaMap):
         # (m3)
         return (
             self.soilStorageVolume(state, cellAreaMap)
             + self.groundwaterStorageVolume(state, cellAreaMap)
-            + vos.getMapVolume(
+            + utils.getMapVolume(
                 state["landSurface"]["interceptStor"]
                 + state["landSurface"]["snowFreeWater"]
                 + state["landSurface"]["snowCoverSWE"],

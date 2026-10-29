@@ -3,6 +3,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb.ncConverter import PCR2netCDF
 
@@ -243,7 +244,7 @@ class LandCover(object):
             )
 
         # crop coefficient files
-        self.cropCoefficientNC = vos.getFullPath(
+        self.cropCoefficientNC = utils.getFullPath(
             self.iniItemsLC["cropCoefficientNC"], self.inputDir
         )
 
@@ -251,10 +252,10 @@ class LandCover(object):
         if "interceptCapNC" in list(
             self.iniItemsLC.keys()
         ) and "coverFractionNC" in list(self.iniItemsLC.keys()):
-            self.interceptCapNC = vos.getFullPath(
+            self.interceptCapNC = utils.getFullPath(
                 self.iniItemsLC["interceptCapNC"], self.inputDir
             )
-            self.coverFractionNC = vos.getFullPath(
+            self.coverFractionNC = utils.getFullPath(
                 self.iniItemsLC["coverFractionNC"], self.inputDir
             )
         else:
@@ -394,7 +395,7 @@ class LandCover(object):
                         lc_parameters[var] = pcr.cover(lc_parameters[var], 0.0)
             else:
                 # netCDF file
-                landCoverPropertiesNC = vos.getFullPath(
+                landCoverPropertiesNC = utils.getFullPath(
                     self.iniItemsLC["landCoverMapsNC"], self.inputDir
                 )
                 for var in landCovParams:
@@ -476,7 +477,7 @@ class LandCover(object):
                 ini_option = self.iniItemsLC[f"{var}NC"]
 
                 if ini_option.endswith(vos.netcdf_suffixes):
-                    netcdf_file = vos.getFullPath(ini_option, self.inputDir)
+                    netcdf_file = utils.getFullPath(ini_option, self.inputDir)
                     lc_parameters[var] = pcr.cover(
                         vos.netcdf2PCRobjClone(
                             netcdf_file,
@@ -660,9 +661,9 @@ class LandCover(object):
             rootFracUpp = (0.30 / 0.30) * rootFraction1
             rootFracLow = (1.20 / 1.20) * rootFraction2
             # Rens: RFW1[TYPE]= RFRAC1[TYPE]/(RFRAC1[TYPE]+RFRAC2[TYPE])
-            adjRootFrUpp = vos.getValDivZero(rootFracUpp, (rootFracUpp + rootFracLow))
+            adjRootFrUpp = utils.getValDivZero(rootFracUpp, (rootFracUpp + rootFracLow))
             # Rens: RFW2[TYPE]= RFRAC2[TYPE]/(RFRAC1[TYPE]+RFRAC2[TYPE])
-            adjRootFrLow = vos.getValDivZero(rootFracLow, (rootFracUpp + rootFracLow))
+            adjRootFrLow = utils.getValDivZero(rootFracLow, (rootFracUpp + rootFracLow))
             # if not defined, put everything in the first layer
             if not self.usingOriginalOldCalcRootTranspirationPartitioningMethod:
                 adjRootFrUpp = pcr.max(0.0, pcr.min(1.0, pcr.cover(adjRootFrUpp, 1.0)))
@@ -675,15 +676,15 @@ class LandCover(object):
             rootFracUpp000005 = 0.05 / 0.30 * rootFraction1
             rootFracUpp005030 = 0.25 / 0.30 * rootFraction1
             rootFracLow030150 = 1.20 / 1.20 * rootFraction2
-            adjRootFrUpp000005 = vos.getValDivZero(
+            adjRootFrUpp000005 = utils.getValDivZero(
                 rootFracUpp000005,
                 (rootFracUpp000005 + rootFracUpp005030 + rootFracLow030150),
             )
-            adjRootFrUpp005030 = vos.getValDivZero(
+            adjRootFrUpp005030 = utils.getValDivZero(
                 rootFracUpp005030,
                 (rootFracUpp000005 + rootFracUpp005030 + rootFracLow030150),
             )
-            adjRootFrLow030150 = vos.getValDivZero(
+            adjRootFrLow030150 = utils.getValDivZero(
                 rootFracLow030150,
                 (rootFracUpp000005 + rootFracUpp005030 + rootFracLow030150),
             )
@@ -1018,11 +1019,11 @@ class LandCover(object):
 
         # degrees of saturation (only needed for reporting)
         if self.numberOfSoilLayers == 2:
-            self.satDegUpp = vos.getValDivZero(
+            self.satDegUpp = utils.getValDivZero(
                 self.storUpp, self.parameters.storCapUpp, vos.smallNumber, 0.0
             )
             self.satDegUpp = pcr.ifthen(self.landmask, self.satDegUpp)
-            self.satDegLow = vos.getValDivZero(
+            self.satDegLow = utils.getValDivZero(
                 self.storLow, self.parameters.storCapLow, vos.smallNumber, 0.0
             )
             self.satDegLow = pcr.ifthen(self.landmask, self.satDegLow)
@@ -1032,7 +1033,7 @@ class LandCover(object):
 
             self.satDegTotal = pcr.ifthen(
                 self.landmask,
-                vos.getValDivZero(
+                utils.getValDivZero(
                     self.storUpp + self.storLow,
                     self.parameters.storCapUpp + self.parameters.storCapLow,
                     vos.smallNumber,
@@ -1041,21 +1042,21 @@ class LandCover(object):
             )
 
         if self.numberOfSoilLayers == 3:
-            self.satDegUpp000005 = vos.getValDivZero(
+            self.satDegUpp000005 = utils.getValDivZero(
                 self.storUpp000005,
                 self.parameters.storCapUpp000005,
                 vos.smallNumber,
                 0.0,
             )
             self.satDegUpp000005 = pcr.ifthen(self.landmask, self.satDegUpp000005)
-            self.satDegUpp005030 = vos.getValDivZero(
+            self.satDegUpp005030 = utils.getValDivZero(
                 self.storUpp005030,
                 self.parameters.storCapUpp005030,
                 vos.smallNumber,
                 0.0,
             )
             self.satDegUpp005030 = pcr.ifthen(self.landmask, self.satDegUpp005030)
-            self.satDegLow030150 = vos.getValDivZero(
+            self.satDegLow030150 = utils.getValDivZero(
                 self.storLow030150,
                 self.parameters.storCapLow030150,
                 vos.smallNumber,
@@ -1063,7 +1064,7 @@ class LandCover(object):
             )
             self.satDegLow030150 = pcr.ifthen(self.landmask, self.satDegLow030150)
 
-            self.satDegUppTotal = vos.getValDivZero(
+            self.satDegUppTotal = utils.getValDivZero(
                 self.storUpp000005 + self.storUpp005030,
                 self.parameters.storCapUpp000005 + self.parameters.storCapUpp005030,
                 vos.smallNumber,
@@ -1074,7 +1075,7 @@ class LandCover(object):
 
             self.satDegTotal = pcr.ifthen(
                 self.landmask,
-                vos.getValDivZero(
+                utils.getValDivZero(
                     self.storUpp000005 + self.storUpp005030 + self.satDegLow030150,
                     self.parameters.storCapUpp000005
                     + self.parameters.storCapUpp005030
@@ -1190,7 +1191,7 @@ class LandCover(object):
         )
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [self.totalPotET],
                 [self.potBareSoilEvap, self.potTranspiration],
                 [],
@@ -1236,7 +1237,7 @@ class LandCover(object):
             meteo.temperature < self.freezingT, meteo.precipitation, 0.0
         )
         # snowfall (m/day); Rens: SNOW = SNOW*if(PRPTOT>0,PRP/PRPTOT,0)
-        self.snowfall = estimSnowfall * vos.getValDivZero(
+        self.snowfall = estimSnowfall * utils.getValDivZero(
             self.throughfall, meteo.precipitation, vos.smallNumber
         )
         # liquid precipitation (m/day); Rens: PRP = PRP-SNOW
@@ -1256,7 +1257,7 @@ class LandCover(object):
             self.interceptStor,
             self.potInterceptionFlux
             * (
-                vos.getValDivZero(
+                utils.getValDivZero(
                     self.interceptStor, self.interceptCap, vos.smallNumber, 0.0
                 )
                 ** (2.00 / 3.00)
@@ -1273,7 +1274,7 @@ class LandCover(object):
                 0.0,
                 pcr.min(
                     1.0,
-                    vos.getValDivZero(
+                    utils.getValDivZero(
                         self.potBareSoilEvap,
                         self.potBareSoilEvap + self.potTranspiration,
                         vos.smallNumber,
@@ -1300,7 +1301,7 @@ class LandCover(object):
         self.actualET += self.interceptEvap
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [self.throughfall],
                 [self.snowfall, self.liquidPrecip],
                 [],
@@ -1310,7 +1311,7 @@ class LandCover(object):
                 currTimeStep.fulldate,
                 threshold=1e-5,
             )
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [meteo.precipitation],
                 [self.throughfall, self.interceptEvap],
                 prevStates,
@@ -1400,7 +1401,7 @@ class LandCover(object):
         self.actualET += self.actSnowFreeWaterEvap
         # changed by Joren
 
-        vos.waterBalanceCheck(
+        utils.waterBalanceCheck(
             [
                 self.snowfall,
                 self.liquidPrecip,
@@ -1418,7 +1419,7 @@ class LandCover(object):
             currTimeStep.fulldate,
             threshold=1e-4,
         )
-        vos.waterBalanceCheck(
+        utils.waterBalanceCheck(
             [self.snowfall, deltaSnowCover, self.incomingVolSnow / self.cellArea],
             [self.transportVolSnow / self.cellArea],
             [prevSnowCoverSWE],
@@ -1428,7 +1429,7 @@ class LandCover(object):
             currTimeStep.fulldate,
             threshold=5e-4,
         )
-        vos.waterBalanceCheck(
+        utils.waterBalanceCheck(
             [self.liquidPrecip],
             [deltaSnowCover, self.actSnowFreeWaterEvap, self.netLqWaterToSoil],
             [prevSnowFreeWater],
@@ -1453,7 +1454,7 @@ class LandCover(object):
         # fraction to transport
         self.transportVolSnow = (
             self.transportVolSnow
-            * vos.rad2deg(self.parameters.tanslope)
+            * utils.rad2deg(self.parameters.tanslope)
             / 90
             * self.frho
         )
@@ -1483,8 +1484,12 @@ class LandCover(object):
             self.soilWaterStorage = pcr.max(0.0, self.storUpp + self.storLow)
 
             # effective degree of saturation (-); zero for zero storage capacities (not covered with 1)
-            self.effSatUpp = vos.getValDivZero(self.storUpp, self.parameters.storCapUpp)
-            self.effSatLow = vos.getValDivZero(self.storLow, self.parameters.storCapLow)
+            self.effSatUpp = utils.getValDivZero(
+                self.storUpp, self.parameters.storCapUpp
+            )
+            self.effSatLow = utils.getValDivZero(
+                self.storLow, self.parameters.storCapLow
+            )
             self.effSatUpp = pcr.min(1.0, self.effSatUpp)
             self.effSatLow = pcr.min(1.0, self.effSatLow)
 
@@ -1562,13 +1567,13 @@ class LandCover(object):
             )
 
             # effective degree of saturation (-)
-            self.effSatUpp000005 = vos.getValDivZero(
+            self.effSatUpp000005 = utils.getValDivZero(
                 self.storUpp000005, self.parameters.storCapUpp000005
             )
-            self.effSatUpp005030 = vos.getValDivZero(
+            self.effSatUpp005030 = utils.getValDivZero(
                 self.storUpp005030, self.parameters.storCapUpp005030
             )
-            self.effSatLow030150 = vos.getValDivZero(
+            self.effSatLow030150 = utils.getValDivZero(
                 self.storLow030150, self.parameters.storCapLow030150
             )
             self.effSatUpp000005 = pcr.min(1.0, self.effSatUpp000005)
@@ -1813,7 +1818,7 @@ class LandCover(object):
             # saturation, to maintain saturation
             saturation_treshold = 0.999
             directRunoffReduction = pcr.ifthenelse(
-                vos.getValDivZero(
+                utils.getValDivZero(
                     soilWaterStorage, self.parameters.rootZoneWaterStorageCap
                 )
                 > saturation_treshold,
@@ -1875,7 +1880,7 @@ class LandCover(object):
             pcr.max(
                 0.0,
                 self.potBareSoilEvap
-                - vos.getValDivZero(self.potBareSoilEvap, remainingPotETP)
+                - utils.getValDivZero(self.potBareSoilEvap, remainingPotETP)
                 * self.openWaterEvap,
             ),
             0.0,
@@ -1884,7 +1889,7 @@ class LandCover(object):
             pcr.max(
                 0.0,
                 self.potTranspiration
-                - vos.getValDivZero(self.potTranspiration, remainingPotETP)
+                - utils.getValDivZero(self.potTranspiration, remainingPotETP)
                 * self.openWaterEvap,
             ),
             0.0,
@@ -2711,7 +2716,7 @@ class LandCover(object):
             )
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [netLqWaterToSoil, satisfied_irrigation_water_height, self.satExcess],
                 [self.directRunoff, self.openWaterEvap, self.infiltration],
                 [preTopWaterLayer],
@@ -2723,7 +2728,7 @@ class LandCover(object):
             )
 
             if self.numberOfLayers == 2:
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.infiltration, self.capRiseUpp],
                     [
                         self.actTranspiUpp,
@@ -2738,7 +2743,7 @@ class LandCover(object):
                     currTimeStep.fulldate,
                     threshold=1e-5,
                 )
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.percUpp],
                     [
                         self.actTranspiLow,
@@ -2753,7 +2758,7 @@ class LandCover(object):
                     currTimeStep.fulldate,
                     threshold=1e-5,
                 )
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.infiltration, self.capRiseLow],
                     [
                         self.satExcess,
@@ -2770,7 +2775,7 @@ class LandCover(object):
                     currTimeStep.fulldate,
                     threshold=1e-4,
                 )
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [
                         netLqWaterToSoil,
                         self.capRiseLow,
@@ -2794,7 +2799,7 @@ class LandCover(object):
                 )
 
             if self.numberOfLayers == 3:
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.infiltration, self.capRiseUpp000005],
                     [
                         self.actTranspiUpp000005,
@@ -2810,7 +2815,7 @@ class LandCover(object):
                     threshold=1e-5,
                 )
 
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.percUpp000005, self.capRiseUpp005030],
                     [
                         self.actTranspiUpp005030,
@@ -2825,7 +2830,7 @@ class LandCover(object):
                     currTimeStep.fulldate,
                     threshold=1e-5,
                 )
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.percUpp005030],
                     [
                         self.actTranspiLow030150,
@@ -2840,7 +2845,7 @@ class LandCover(object):
                     currTimeStep.fulldate,
                     threshold=1e-5,
                 )
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [self.infiltration, self.capRiseLow030150],
                     [
                         self.satExcess,
@@ -2859,7 +2864,7 @@ class LandCover(object):
                     currTimeStep.fulldate,
                     threshold=1e-4,
                 )
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [
                         netLqWaterToSoil,
                         self.capRiseLow030150,

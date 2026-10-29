@@ -3,6 +3,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb import variable_list as varDicts
 from pcrglobwb.ncConverter import PCR2netCDF
@@ -596,7 +597,7 @@ class Reporting(object):
         self.totalLandSurfacePotET = self._model.landSurface.totalPotET
         self.totLandSurfaceActuaET = self._model.landSurface.actualET
 
-        self.fractionLandSurfaceET = vos.getValDivZero(
+        self.fractionLandSurfaceET = utils.getValDivZero(
             self.totLandSurfaceActuaET, self.totalLandSurfacePotET, vos.smallNumber
         )
 
@@ -669,7 +670,7 @@ class Reporting(object):
             self._model.landSurface.actualET + self._model.routing.waterBodyEvaporation
         )
 
-        self.fractionTotalEvaporation = vos.getValDivZero(
+        self.fractionTotalEvaporation = utils.getValDivZero(
             self.totalEvaporation,
             self._model.landSurface.totalPotET + self._model.routing.waterBodyPotEvap,
             vos.smallNumber,
@@ -715,7 +716,7 @@ class Reporting(object):
                     self.directRunoff * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # accumulated interflowTotal along the drainage network (m3/s)
@@ -725,7 +726,7 @@ class Reporting(object):
                     self.interflowTotal * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # accumulated baseflow along the drainage network (m3/s)
@@ -735,7 +736,7 @@ class Reporting(object):
                     self.baseflow * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # accumulated runoff along the drainage network (m3/s)
@@ -745,7 +746,7 @@ class Reporting(object):
                     self.runoff * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # accumulated surface water abstraction along the drainage network (m3/s)
@@ -755,7 +756,7 @@ class Reporting(object):
                     self.surfaceWaterAbstraction * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # local changes in water bodies (abstraction, return flow, evaporation, bed exchange), excluding runoff
@@ -773,7 +774,7 @@ class Reporting(object):
         self.waterBodyActEvaporation = self._model.routing.waterBodyEvaporation
         self.waterBodyPotEvaporation = self._model.routing.waterBodyPotEvap
 
-        self.fractionWaterBodyEvaporation = vos.getValDivZero(
+        self.fractionWaterBodyEvaporation = utils.getValDivZero(
             self.waterBodyActEvaporation, self.waterBodyPotEvaporation, vos.smallNumber
         )
 
@@ -784,7 +785,7 @@ class Reporting(object):
                     self.waterBodyActEvaporation * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # land surface evaporation (m)
@@ -845,7 +846,7 @@ class Reporting(object):
         # Menno: fractions of the water sources allocated to satisfy the water demand per cell
         self.fracSurfaceWaterAllocation = pcr.ifthen(
             self._model.routing.landmask,
-            vos.getValDivZero(
+            utils.getValDivZero(
                 self._model.landSurface.allocSurfaceWaterAbstract,
                 self.totalGrossDemand,
                 vos.smallNumber,
@@ -859,7 +860,7 @@ class Reporting(object):
 
         self.fracNonFossilGroundwaterAllocation = pcr.ifthen(
             self._model.routing.landmask,
-            vos.getValDivZero(
+            utils.getValDivZero(
                 self._model.groundwater.allocNonFossilGroundwater,
                 self.totalGrossDemand,
                 vos.smallNumber,
@@ -868,7 +869,7 @@ class Reporting(object):
 
         self.fracOtherWaterSourceAllocation = pcr.ifthen(
             self._model.routing.landmask,
-            vos.getValDivZero(
+            utils.getValDivZero(
                 self._model.groundwater.unmetDemand,
                 self.totalGrossDemand,
                 vos.smallNumber,
@@ -877,7 +878,7 @@ class Reporting(object):
 
         self.fracDesalinatedWaterAllocation = pcr.ifthen(
             self._model.routing.landmask,
-            vos.getValDivZero(
+            utils.getValDivZero(
                 self._model.landSurface.desalinationAllocation,
                 self.totalGrossDemand,
                 vos.smallNumber,
@@ -1074,7 +1075,7 @@ class Reporting(object):
                     self.nonIrrReturnFlow * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # return flow due to groundwater abstraction (m/day)
@@ -1096,7 +1097,7 @@ class Reporting(object):
                     self.surfaceWaterInf * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # net groundwater discharge (m/day)
@@ -1109,7 +1110,7 @@ class Reporting(object):
                     self.netGroundwaterDischarge * self._model.routing.cellArea,
                     self._model.routing.lddMap,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
         # water withdrawal of the irrigation sector (m/day)

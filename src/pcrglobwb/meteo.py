@@ -6,6 +6,7 @@ import math
 import numpy as np
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb.evaporation import hamonETPFunctions as hamon_et0
 from pcrglobwb.evaporation import ref_pot_et_penman_monteith as penman_monteith
@@ -165,7 +166,7 @@ class Meteo(object):
 
         # latitudes, required to calculate referenceETPot with the Hamon and Penman-Monteith methods
         self.latitudes = pcr.ycoordinate(pcr.boolean(1.0))
-        self.latitudes_in_radian = vos.deg2rad(self.latitudes)
+        self.latitudes_in_radian = utils.deg2rad(self.latitudes)
 
         self.lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1.0)), np.nan)[0, :]
         self.lat = pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1.0)), np.nan)[0, :]
@@ -219,18 +220,18 @@ class Meteo(object):
             == "True"
         ):
             self.using_daily_factor_for_downscaling = True
-            self.precip_downscaling_factor_file = vos.getFullPath(
+            self.precip_downscaling_factor_file = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["precip_downscaling_factor_file"],
                 self.inputDir,
             )
-            self.precip_drydays_file = vos.getFullPath(
+            self.precip_drydays_file = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["precip_drydays_file"], self.inputDir
             )
-            self.temp_downscaling_factor_file = vos.getFullPath(
+            self.temp_downscaling_factor_file = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["temp_downscaling_factor_file"],
                 self.inputDir,
             )
-            self.evap_downscaling_factor_file = vos.getFullPath(
+            self.evap_downscaling_factor_file = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["evap_downscaling_factor_file"],
                 self.inputDir,
             )
@@ -475,20 +476,20 @@ class Meteo(object):
             self.anomalyDEM = highResolutionDEM - loweResolutionDEM
 
             # temperature lapse rate (netCDF) file
-            self.temperLapseRateNC = vos.getFullPath(
+            self.temperLapseRateNC = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["temperLapseRateNC"], self.inputDir
             )
             # TODO: remove this criterion
-            self.temperatCorrelNC = vos.getFullPath(
+            self.temperatCorrelNC = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["temperatCorrelNC"], self.inputDir
             )
 
             # precipitation lapse rate (netCDF) file
-            self.precipLapseRateNC = vos.getFullPath(
+            self.precipLapseRateNC = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["precipLapseRateNC"], self.inputDir
             )
             # TODO: remove this criterion
-            self.precipitCorrelNC = vos.getFullPath(
+            self.precipitCorrelNC = utils.getFullPath(
                 iniItems.meteoDownscalingOptions["precipitCorrelNC"], self.inputDir
             )
 
@@ -1417,7 +1418,7 @@ class Meteo(object):
 
                 method_for_time_index = None
                 method_for_time_index = "daily"
-                netcdf_file_name = vos.getFullPath(
+                netcdf_file_name = utils.getFullPath(
                     self.iniItems.meteoOptions[meteo_var_name], self.inputDir
                 )
                 vars(self)[meteo_var_name] = vos.netcdf2PCRobjClone(

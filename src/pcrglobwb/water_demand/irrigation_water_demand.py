@@ -3,6 +3,7 @@ import os
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -83,7 +84,7 @@ class IrrigationWaterDemand(object):
         elif "nc" in os.path.splitext(self.ini_items_for_irrigation_efficiency)[1]:
             try:
                 # netCDF file with a time dimension
-                ncFileIn = vos.getFullPath(
+                ncFileIn = utils.getFullPath(
                     self.ini_items_for_irrigation_efficiency, self.inputDir
                 )
                 self.irrigationEfficiency = vos.netcdf2PCRobjClone(
@@ -222,8 +223,8 @@ class IrrigationWaterDemand(object):
     def get_readily_available_water_within_the_root_zone(self):
 
         if self.numberOfLayers == 2:
-            effSatUpp = vos.getValDivZero(self.storUpp, self.parameters.storCapUpp)
-            effSatLow = vos.getValDivZero(self.storLow, self.parameters.storCapLow)
+            effSatUpp = utils.getValDivZero(self.storUpp, self.parameters.storCapUpp)
+            effSatLow = utils.getValDivZero(self.storLow, self.parameters.storCapLow)
             effSatUpp = pcr.min(1.0, effSatUpp)
             effSatLow = pcr.min(1.0, effSatLow)
 
@@ -245,13 +246,13 @@ class IrrigationWaterDemand(object):
 
         if self.numberOfLayers == 3:
             # effective degree of saturation (-)
-            effSatUpp000005 = vos.getValDivZero(
+            effSatUpp000005 = utils.getValDivZero(
                 self.storUpp000005, self.parameters.storCapUpp000005
             )
-            effSatUpp005030 = vos.getValDivZero(
+            effSatUpp005030 = utils.getValDivZero(
                 self.storUpp005030, self.parameters.storCapUpp005030
             )
-            effSatLow030150 = vos.getValDivZero(
+            effSatLow030150 = utils.getValDivZero(
                 self.storLow030150, self.parameters.storCapLow030150
             )
             effSatUpp000005 = pcr.min(1.0, effSatUpp000005)

@@ -6,6 +6,7 @@ from copy import deepcopy
 import numpy as np
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb import waterBodies
 from pcrglobwb.ncConverter import PCR2netCDF
@@ -193,7 +194,7 @@ class Routing(object):
         )
 
         # model resolution (arc-degree)
-        self.cellSizeInArcDeg = vos.getCloneAttributes()["cellsize"]
+        self.cellSizeInArcDeg = utils.getCloneAttributes()["cellsize"]
 
         # maximum number of time steps for long-term average flows (default: 5 years = 1825 days)
         self.maxTimestepsToAvgDischargeLong = 1825.0
@@ -298,7 +299,7 @@ class Routing(object):
         if iniItems.routingOptions["cropCoefficientWaterNC"] == "None":
             self.no_zero_crop_water_coefficient = False
         else:
-            self.fileCropKC = vos.getFullPath(
+            self.fileCropKC = utils.getFullPath(
                 iniItems.routingOptions["cropCoefficientWaterNC"], self.inputDir
             )
 
@@ -314,7 +315,7 @@ class Routing(object):
             1,
         )[0]
         self.limit_num_of_sub_time_steps = np.ceil(
-            vos.secondsPerDay() / design_length_of_sub_time_step
+            utils.secondsPerDay() / design_length_of_sub_time_step
         )
         # at least 24 sub-time steps (hourly, as in Van Beek et al., 2011)
         self.limit_num_of_sub_time_steps = max(24.0, self.limit_num_of_sub_time_steps)
@@ -325,7 +326,7 @@ class Routing(object):
                 iniItems.routingOptions["maxiumLengthOfSubTimeStep"]
             )
             minimum_number_of_sub_time_step = np.ceil(
-                vos.secondsPerDay() / maxiumLengthOfSubTimeStep
+                utils.secondsPerDay() / maxiumLengthOfSubTimeStep
             )
             self.limit_num_of_sub_time_steps = max(
                 minimum_number_of_sub_time_step, self.limit_num_of_sub_time_steps
@@ -439,7 +440,7 @@ class Routing(object):
         if "WWtPlantsNC" in list(iniItems.routingOptions.keys()):
             self.WWtPlants = True
             # wastewater pathways and removal efficiencies (treatment: tertiary, secondary, primary; collected but untreated; basic sanitation; open defecation; direct)
-            self.WWtPlantsNC = vos.getFullPath(
+            self.WWtPlantsNC = utils.getFullPath(
                 iniItems.routingOptions["WWtPlantsNC"], self.inputDir
             )
 
@@ -485,11 +486,11 @@ class Routing(object):
 
             if iniItems.meteoOptions["sunhoursTable"] != "Default":
                 # convert cloud cover to sunshine hours (Doornkamp & Pruitt)
-                self.sunFracTBL = vos.getFullPath(
+                self.sunFracTBL = utils.getFullPath(
                     iniItems.meteoOptions["sunhoursTable"], self.inputDir
                 )
             else:
-                self.sunFracTBL = vos.getFullPath(
+                self.sunFracTBL = utils.getFullPath(
                     "sunhoursfrac.tbl", os.path.abspath(os.path.dirname(__file__))
                 )
                 # sunshine fraction table
@@ -498,35 +499,35 @@ class Routing(object):
                 )
 
             # paths to additional meteorological variables
-            self.cloudFileNC = vos.getFullPath(
+            self.cloudFileNC = utils.getFullPath(
                 iniItems.meteoOptions["cloudcoverNC"], self.inputDir
             )
-            self.radFileNC = vos.getFullPath(
+            self.radFileNC = utils.getFullPath(
                 iniItems.meteoOptions["radiationNC"], self.inputDir
             )
-            self.vapFileNC = vos.getFullPath(
+            self.vapFileNC = utils.getFullPath(
                 iniItems.meteoOptions["vaporNC"], self.inputDir
             )
-            self.annualTFileNC = vos.getFullPath(
+            self.annualTFileNC = utils.getFullPath(
                 iniItems.meteoOptions["annualAvgTNC"], self.inputDir
             )
 
             # paths to power plant data
-            self.TlmaxNC = vos.getFullPath(
+            self.TlmaxNC = utils.getFullPath(
                 iniItems.routingOptions["TlmaxNC"], self.inputDir
             )
-            self.powerplants_fwNC = vos.getFullPath(
+            self.powerplants_fwNC = utils.getFullPath(
                 iniItems.routingOptions["powerplants_fwNC"], self.inputDir
             )
-            self.powerplants_fwfixedNC = vos.getFullPath(
+            self.powerplants_fwfixedNC = utils.getFullPath(
                 iniItems.routingOptions["powerplants_fwfixedNC"], self.inputDir
             )
-            self.powerplants_swNC = vos.getFullPath(
+            self.powerplants_swNC = utils.getFullPath(
                 iniItems.routingOptions["powerplants_swNC"], self.inputDir
             )
 
             # salinity: background TDS concentration (mg/L)
-            self.backgroundSalinityNC = vos.getFullPath(
+            self.backgroundSalinityNC = utils.getFullPath(
                 iniItems.routingOptions["backgroundSalinity"], self.inputDir
             )
             # (mg/L)
@@ -540,7 +541,7 @@ class Routing(object):
             self.watertempcorrection_BOD = pcr.scalar(1.047)
 
             # dissolved oxygen: elevation data
-            self.elevation_path = vos.getFullPath(
+            self.elevation_path = utils.getFullPath(
                 iniItems.landSurfaceOptions["topographyNC"], self.inputDir
             )
             self.elevation = vos.netcdf2PCRobjCloneWithoutTime(
@@ -579,13 +580,13 @@ class Routing(object):
                 logger.info("DynQual running in offline configuration")
 
                 # baseflow, interflow and direct runoff, required for offline DynQual runs
-                self.baseflowNC = vos.getFullPath(
+                self.baseflowNC = utils.getFullPath(
                     iniItems.routingOptions["baseflowNC"], self.inputDir
                 )
-                self.interflowNC = vos.getFullPath(
+                self.interflowNC = utils.getFullPath(
                     iniItems.routingOptions["interflowNC"], self.inputDir
                 )
-                self.directRunoffNC = vos.getFullPath(
+                self.directRunoffNC = utils.getFullPath(
                     iniItems.routingOptions["directRunoffNC"], self.inputDir
                 )
 
@@ -626,11 +627,11 @@ class Routing(object):
 
                 # pollutant loading input data: domestic, gridded annual population at 5 arcmin (Lange & Geiger, 2020)
 
-                self.PopulationNC = vos.getFullPath(
+                self.PopulationNC = utils.getFullPath(
                     iniItems.routingOptions["PopulationNC"], self.inputDir
                 )
                 # average (regional) excretion rates
-                self.Dom_ExcrLoadNC = vos.getFullPath(
+                self.Dom_ExcrLoadNC = utils.getFullPath(
                     iniItems.routingOptions["Dom_ExcrLoadNC"], self.inputDir
                 )
                 # (g/capita/day)
@@ -647,7 +648,7 @@ class Routing(object):
                 )
 
                 # manufacturing: average (regional) effluent concentrations
-                self.Man_EfflConcNC = vos.getFullPath(
+                self.Man_EfflConcNC = utils.getFullPath(
                     iniItems.routingOptions["Man_EfflConcNC"], self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
@@ -664,11 +665,11 @@ class Routing(object):
                 )
 
                 # urban surface runoff: urban fraction, from 0 (no urban) to 1 (all urban)
-                self.UrbanFractionNC = vos.getFullPath(
+                self.UrbanFractionNC = utils.getFullPath(
                     iniItems.routingOptions["UrbanFractionNC"], self.inputDir
                 )
                 # average (regional) effluent concentrations
-                self.USR_EfflConcNC = vos.getFullPath(
+                self.USR_EfflConcNC = utils.getFullPath(
                     iniItems.routingOptions["USR_EfflConcNC"], self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
@@ -685,11 +686,11 @@ class Routing(object):
                 )
 
                 # livestock: gridded populations, 2010, 5 arcmin (Gilbert et al., 2018)
-                self.LivPopulationNC = vos.getFullPath(
+                self.LivPopulationNC = utils.getFullPath(
                     iniItems.routingOptions["LivPopulationNC"], self.inputDir
                 )
                 # average (regional) excretion rates
-                self.Liv_ExcrLoadNC = vos.getFullPath(
+                self.Liv_ExcrLoadNC = utils.getFullPath(
                     iniItems.routingOptions["Liv_ExcrLoadNC"], self.inputDir
                 )
                 # (g/stock/day)
@@ -758,7 +759,7 @@ class Routing(object):
                 )
 
                 # irrigation: soil concentration averaged over the topsoil and subsoil
-                self.Irr_EfflConcNC = vos.getFullPath(
+                self.Irr_EfflConcNC = utils.getFullPath(
                     iniItems.routingOptions["Irr_EfflConcNC"], self.inputDir
                 )
                 # (mg/L)
@@ -768,13 +769,13 @@ class Routing(object):
 
             else:
                 # paths to (non-natural) TDS, BOD and FC loading inputs
-                self.TDSloadNC = vos.getFullPath(
+                self.TDSloadNC = utils.getFullPath(
                     iniItems.routingOptions["TDSloadNC"], self.inputDir
                 )
-                self.BODloadNC = vos.getFullPath(
+                self.BODloadNC = utils.getFullPath(
                     iniItems.routingOptions["BODloadNC"], self.inputDir
                 )
-                self.FCloadNC = vos.getFullPath(
+                self.FCloadNC = utils.getFullPath(
                     iniItems.routingOptions["FCloadNC"], self.inputDir
                 )
 
@@ -1262,7 +1263,7 @@ class Routing(object):
 
         if relativeElevationFileNC is None:
 
-            relZFileName = vos.getFullPath(
+            relZFileName = utils.getFullPath(
                 iniItems.routingOptions["relativeElevationFiles"],
                 iniItems.globalOptions["inputDir"],
             )
@@ -1393,7 +1394,7 @@ class Routing(object):
             ((yMean * wMean) / (wMean + 2 * yMean)) ** (2.0 / 3.0)
             * ((self.gradient) ** (0.5))
             / self.manningsN
-            * vos.secondsPerDay()
+            * utils.secondsPerDay()
         )
 
         # (arcDeg/day)
@@ -1457,7 +1458,7 @@ class Routing(object):
             channel_only_wetted_perimeter = (
                 pcr.min(
                     self.channelDepth,
-                    vos.getValDivZero(
+                    utils.getValDivZero(
                         self.channelStorage, self.channelLength * self.channelWidth, 0.0
                     ),
                 )
@@ -1485,7 +1486,7 @@ class Routing(object):
             ((yMean * wMean) / (wMean + 2 * yMean)) ** (2.0 / 3.0)
             * ((self.gradient) ** (0.5))
             / usedManningsN
-            * vos.secondsPerDay()
+            * utils.secondsPerDay()
         )
 
         # (arcDeg/day)
@@ -1595,7 +1596,7 @@ class Routing(object):
         self.channelStorage += channelStorageThatWillNotMove
 
         # for non-kinematic wave approaches, subDischarge is Q in m3/s
-        self.subDischarge = self.Q / vos.secondsPerDay()
+        self.subDischarge = self.Q / utils.secondsPerDay()
         self.subDischarge = pcr.ifthen(self.landmask, self.subDischarge)
 
     def estimate_length_of_sub_time_step(self):
@@ -1605,20 +1606,20 @@ class Routing(object):
         length_of_sub_time_step = pcr.ifthenelse(
             self.subDischarge > 0.0,
             self.water_height * self.dynamicFracWat * self.cellArea / self.subDischarge,
-            vos.secondsPerDay(),
+            utils.secondsPerDay(),
         )
 
         # number of sub-time steps (Rens van Beek's method)
         critical_condition = (
-            (length_of_sub_time_step < vos.secondsPerDay())
+            (length_of_sub_time_step < utils.secondsPerDay())
             & (self.water_height > self.critical_water_height)
             & (self.lddMap != pcr.ldd(5))
         )
-        number_of_sub_time_steps = vos.secondsPerDay() / pcr.cover(
+        number_of_sub_time_steps = utils.secondsPerDay() / pcr.cover(
             pcr.areaminimum(
                 pcr.ifthen(critical_condition, length_of_sub_time_step), self.landmask
             ),
-            vos.secondsPerDay() / self.limit_num_of_sub_time_steps,
+            utils.secondsPerDay() / self.limit_num_of_sub_time_steps,
         )
         number_of_sub_time_steps = 1.25 * number_of_sub_time_steps + 1
         number_of_sub_time_steps = pcr.roundup(number_of_sub_time_steps)
@@ -1629,7 +1630,7 @@ class Routing(object):
         number_of_loops = int(max(self.limit_num_of_sub_time_steps, number_of_loops))
 
         # actual sub-time step length (s)
-        length_of_sub_time_step = vos.secondsPerDay() / number_of_loops
+        length_of_sub_time_step = utils.secondsPerDay() / number_of_loops
 
         return (length_of_sub_time_step, number_of_loops)
 
@@ -1695,7 +1696,7 @@ class Routing(object):
                     ),
                     0.0,
                 )
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
             waterBodyOutflowInM3PerSec = pcr.ifthen(
                 pcr.scalar(self.WaterBodies.waterBodyIds) > 0.0,
@@ -2039,7 +2040,7 @@ class Routing(object):
         self.local_input_to_surface_water -= self.riverbedExchange
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [pcr.scalar(0.0)],
                 [self.riverbedExchange / self.cellArea],
                 [preStorage / self.cellArea],
@@ -2183,7 +2184,7 @@ class Routing(object):
         self.calculate_evaporation(landSurface, groundwater, currTimeStep, meteo)
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [self.runoff, self.nonIrrReturnFlow / self.cellArea],
                 [landSurface.actSurfaceWaterAbstract, self.waterBodyEvaporation],
                 [preStorage / self.cellArea],
@@ -2220,7 +2221,7 @@ class Routing(object):
             self.maxTimestepsToAvgDischargeLong,
             currTimeStep,
             self.avgDischarge,
-            vos.secondsPerDay(),
+            utils.secondsPerDay(),
             self.downstreamDemand,
         )
 
@@ -2258,7 +2259,7 @@ class Routing(object):
         # note: local_input_to_surface_water does not include waterBodyOutflow
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [self.waterBodyOutflow / self.cellArea],
                 [storageAtLakeAndReservoirs / self.cellArea],
                 [preStorage / self.cellArea],
@@ -2302,7 +2303,7 @@ class Routing(object):
         if self.method == "simplifiedKinematicWave":
             self.simplifiedKinematicWave(meteo, landSurface, groundwater)
         # channel discharge of the current time step (m3/s)
-        self.discharge = self.Q / vos.secondsPerDay()
+        self.discharge = self.Q / utils.secondsPerDay()
         # reported channel discharge cannot be negative
         self.discharge = pcr.max(0.0, self.discharge)
         self.discharge = pcr.ifthen(self.landmask, self.discharge)
@@ -2351,7 +2352,7 @@ class Routing(object):
         channel_only_wetted_perimeter = (
             pcr.min(
                 self.channelDepth,
-                vos.getValDivZero(
+                utils.getValDivZero(
                     channelStorage, self.channelLength * self.channelWidth, 0.0
                 ),
             )
@@ -2556,21 +2557,21 @@ class Routing(object):
                 (self.runoff + landSurface.nonIrrReturnFlow)
                 * self.cellArea
                 * length_of_sub_time_step
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
             # (m3)
             acc_local_input_to_surface_water += (
                 (self.runoff + landSurface.nonIrrReturnFlow)
                 * self.cellArea
                 * length_of_sub_time_step
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
             # potential evaporation within the sub-time step, over the entire cell area (m)
             water_body_potential_evaporation = (
                 self.calculate_potential_evaporation(landSurface, currTimeStep, meteo)
                 * length_of_sub_time_step
-                / vos.secondsPerDay()
+                / utils.secondsPerDay()
             )
 
             # accumulate the potential evaporation
@@ -2584,19 +2585,19 @@ class Routing(object):
                 water_body_potential_evaporation
                 * self.cellArea
                 * length_of_sub_time_step
-                / vos.secondsPerDay(),
+                / utils.secondsPerDay(),
             )
             channelStorageForRouting -= water_body_evaporation_volume
             acc_local_input_to_surface_water -= water_body_evaporation_volume
             acc_water_body_evaporation_volume += water_body_evaporation_volume
 
             if self.debugWaterBalance:
-                vos.waterBalanceCheck(
+                utils.waterBalanceCheck(
                     [
-                        self.runoff * length_of_sub_time_step / vos.secondsPerDay(),
+                        self.runoff * length_of_sub_time_step / utils.secondsPerDay(),
                         landSurface.nonIrrReturnFlow
                         * length_of_sub_time_step
-                        / vos.secondsPerDay(),
+                        / utils.secondsPerDay(),
                     ],
                     [water_body_evaporation_volume / self.cellArea],
                     [preStorage / self.cellArea],
@@ -2798,7 +2799,7 @@ class Routing(object):
         self.channelStorage = pcr.max(0.0, self.channelStorage)
 
         # channel discharge of the current time step (m3/s)
-        self.discharge = self.Q / vos.secondsPerDay()
+        self.discharge = self.Q / utils.secondsPerDay()
         # reported channel discharge cannot be negative
         self.discharge = pcr.max(0.0, self.discharge)
         self.discharge = pcr.ifthen(self.landmask, self.discharge)
@@ -2851,7 +2852,7 @@ class Routing(object):
         self.avgDischargeShort = pcr.max(0.0, self.avgDischargeShort)
 
         # long-term average baseflow (m3/s), used as proxy to partition groundwater and surface water abstractions
-        baseflowM3PerSec = groundwater.baseflow * self.cellArea / vos.secondsPerDay()
+        baseflowM3PerSec = groundwater.baseflow * self.cellArea / utils.secondsPerDay()
 
         deltaAnoBaseflow = baseflowM3PerSec - self.avgBaseflow
         self.avgBaseflow = self.avgBaseflow + deltaAnoBaseflow / pcr.min(
@@ -2918,7 +2919,7 @@ class Routing(object):
         return minDischargeForEnvironmentalFlow
 
     def estimate_available_volume_for_abstraction(
-        self, channelStorage, length_of_time_step=vos.secondsPerDay()
+        self, channelStorage, length_of_time_step=utils.secondsPerDay()
     ):
         # input: channelStorage (m3)
 
@@ -2933,7 +2934,7 @@ class Routing(object):
         # reduce readAvlChannelStorage if the average discharge < minDischargeForEnvironmentalFlow
         readAvlChannelStorage *= pcr.min(
             1.0,
-            vos.getValDivZero(
+            utils.getValDivZero(
                 pcr.max(0.0, pcr.min(self.avgDischargeShort, self.avgDischarge)),
                 minDischargeForEnvironmentalFlow,
                 vos.smallNumber,
@@ -3540,7 +3541,7 @@ class Routing(object):
 
         # fraction of direct runoff (direct runoff / total runoff), used to transport pollution from open
         # defecation and extensive livestock
-        self.frac_surfaceRunoff = vos.getValDivZero(
+        self.frac_surfaceRunoff = utils.getValDivZero(
             landSurface.directRunoff,
             (landSurface.landSurfaceRunoff + groundwater.baseflow),
         )
@@ -3991,15 +3992,15 @@ class Routing(object):
 
         # pollution from irrigation: irrigation return flow (m3/day) * soil TDS (mg/L); the return flows
         # follow from direct runoff, interflow and baseflow
-        self.irr_rf_from_direct_runoff = landSurface.directRunoff * vos.getValDivZero(
+        self.irr_rf_from_direct_runoff = landSurface.directRunoff * utils.getValDivZero(
             self.avg_irrGrossDemand,
             (self.avg_irrGrossDemand + self.avg_netLqWaterToSoil),
         )
-        self.irr_rf_from_interflow = landSurface.interflowTotal * vos.getValDivZero(
+        self.irr_rf_from_interflow = landSurface.interflowTotal * utils.getValDivZero(
             self.avg_irrGrossDemand,
             (self.avg_irrGrossDemand + self.avg_netLqWaterToSoil),
         )
-        self.irr_rf_from_baseflow = groundwater.baseflow * vos.getValDivZero(
+        self.irr_rf_from_baseflow = groundwater.baseflow * utils.getValDivZero(
             self.avg_irrGrossDemand,
             (self.avg_irrGrossDemand + self.avg_netLqWaterToSoil),
         )
@@ -4069,7 +4070,12 @@ class Routing(object):
         self.FCload = pcr.ifthen(self.landmask, self.FCload)
 
     def qualityLocal(
-        self, meteo, landSurface, groundwater, currTimeStep, timeSec=vos.secondsPerDay()
+        self,
+        meteo,
+        landSurface,
+        groundwater,
+        currTimeStep,
+        timeSec=utils.secondsPerDay(),
     ):
 
         # water temperature: surface water energy fluxes (W/m2) within the current time step; ice formation
@@ -4318,21 +4324,21 @@ class Routing(object):
 
         # energy (water temperature) routing, adding heat effluents from power plants (J per timeSec)
         self.volumeEW = self.volumeEW + (
-            self.PowTwload * (timeSec / vos.secondsPerDay())
+            self.PowTwload * (timeSec / utils.secondsPerDay())
         )
         dtotEWLat = channelTransFrac * self.volumeEW
         self.volumeEW = self.volumeEW + pcr.upstream(self.lddMap, dtotEWLat) - dtotEWLat
 
         # salinity (TDS) routing
         self.routedTDS = self.routedTDS + (
-            self.TDSload * (timeSec / vos.secondsPerDay())
+            self.TDSload * (timeSec / utils.secondsPerDay())
         )
         dTDSLat = channelTransFrac * self.routedTDS
         self.routedTDS = self.routedTDS + pcr.upstream(self.lddMap, dTDSLat) - dTDSLat
 
         if self.loadsPerSector:
             self.routedDomTDS = self.routedDomTDS + (
-                self.Dom_TDSload * (timeSec / vos.secondsPerDay())
+                self.Dom_TDSload * (timeSec / utils.secondsPerDay())
             )
             dDomTDSLat = channelTransFrac * self.routedDomTDS
             self.routedDomTDS = (
@@ -4340,7 +4346,7 @@ class Routing(object):
             )
 
             self.routedManTDS = self.routedManTDS + (
-                self.Man_TDSload * (timeSec / vos.secondsPerDay())
+                self.Man_TDSload * (timeSec / utils.secondsPerDay())
             )
             dManTDSLat = channelTransFrac * self.routedManTDS
             self.routedManTDS = (
@@ -4348,7 +4354,7 @@ class Routing(object):
             )
 
             self.routedUSRTDS = self.routedUSRTDS + (
-                self.USR_TDSload * (timeSec / vos.secondsPerDay())
+                self.USR_TDSload * (timeSec / utils.secondsPerDay())
             )
             dUSRTDSLat = channelTransFrac * self.routedUSRTDS
             self.routedUSRTDS = (
@@ -4356,7 +4362,7 @@ class Routing(object):
             )
 
             self.routedIrrTDS = self.routedIrrTDS + (
-                self.Irr_TDSload * (timeSec / vos.secondsPerDay())
+                self.Irr_TDSload * (timeSec / utils.secondsPerDay())
             )
             dIrrTDSLat = channelTransFrac * self.routedIrrTDS
             self.routedIrrTDS = (
@@ -4365,11 +4371,11 @@ class Routing(object):
 
         # organic (BOD) routing
         self.routedBOD = self.routedBOD + (
-            self.BODload * (timeSec / vos.secondsPerDay())
+            self.BODload * (timeSec / utils.secondsPerDay())
         )
         dBODLat = channelTransFrac * self.routedBOD
         self.BODdecay = pcr.exp(
-            -(self.BODdecay_temperature) * (timeSec / vos.secondsPerDay())
+            -(self.BODdecay_temperature) * (timeSec / utils.secondsPerDay())
         )
         self.routedBOD = (
             self.routedBOD + pcr.upstream(self.lddMap, dBODLat) - dBODLat
@@ -4377,7 +4383,7 @@ class Routing(object):
 
         if self.loadsPerSector:
             self.routedDomBOD = self.routedDomBOD + (
-                self.Dom_BODload * (timeSec / vos.secondsPerDay())
+                self.Dom_BODload * (timeSec / utils.secondsPerDay())
             )
             dDomBODLat = channelTransFrac * self.routedDomBOD
             self.routedDomBOD = (
@@ -4385,7 +4391,7 @@ class Routing(object):
             ) * self.BODdecay
 
             self.routedManBOD = self.routedManBOD + (
-                self.Man_BODload * (timeSec / vos.secondsPerDay())
+                self.Man_BODload * (timeSec / utils.secondsPerDay())
             )
             dManBODLat = channelTransFrac * self.routedManBOD
             self.routedManBOD = (
@@ -4393,7 +4399,7 @@ class Routing(object):
             ) * self.BODdecay
 
             self.routedUSRBOD = self.routedUSRBOD + (
-                self.USR_BODload * (timeSec / vos.secondsPerDay())
+                self.USR_BODload * (timeSec / utils.secondsPerDay())
             )
             dUSRBODLat = channelTransFrac * self.routedUSRBOD
             self.routedUSRBOD = (
@@ -4401,7 +4407,7 @@ class Routing(object):
             ) * self.BODdecay
 
             self.routedintLivBOD = self.routedintLivBOD + (
-                self.intLiv_BODload * (timeSec / vos.secondsPerDay())
+                self.intLiv_BODload * (timeSec / utils.secondsPerDay())
             )
             dintLivBODLat = channelTransFrac * self.routedintLivBOD
             self.routedintLivBOD = (
@@ -4411,7 +4417,7 @@ class Routing(object):
             ) * self.BODdecay
 
             self.routedextLivBOD = self.routedextLivBOD + (
-                self.extLiv_BODload * (timeSec / vos.secondsPerDay())
+                self.extLiv_BODload * (timeSec / utils.secondsPerDay())
             )
             dextLivBODLat = channelTransFrac * self.routedextLivBOD
             self.routedextLivBOD = (
@@ -4421,7 +4427,9 @@ class Routing(object):
             ) * self.BODdecay
 
         # pathogen (FC) routing
-        self.routedFC = self.routedFC + (self.FCload * (timeSec / vos.secondsPerDay()))
+        self.routedFC = self.routedFC + (
+            self.FCload * (timeSec / utils.secondsPerDay())
+        )
         dFCLat = channelTransFrac * self.routedFC
         self.FCdecay = pcr.exp(
             -(
@@ -4429,7 +4437,7 @@ class Routing(object):
                 + self.FCdecay_solarradiation
                 + self.FCdecay_sedimentation
             )
-            * (timeSec / vos.secondsPerDay())
+            * (timeSec / utils.secondsPerDay())
         )
         self.routedFC = (
             self.routedFC + pcr.upstream(self.lddMap, dFCLat) - dFCLat
@@ -4437,7 +4445,7 @@ class Routing(object):
 
         if self.loadsPerSector:
             self.routedDomFC = self.routedDomFC + (
-                self.Dom_FCload * (timeSec / vos.secondsPerDay())
+                self.Dom_FCload * (timeSec / utils.secondsPerDay())
             )
             dDomFCLat = channelTransFrac * self.routedDomFC
             self.routedDomFC = (
@@ -4445,7 +4453,7 @@ class Routing(object):
             ) * self.FCdecay
 
             self.routedManFC = self.routedManFC + (
-                self.Man_FCload * (timeSec / vos.secondsPerDay())
+                self.Man_FCload * (timeSec / utils.secondsPerDay())
             )
             dManFCLat = channelTransFrac * self.routedManFC
             self.routedManFC = (
@@ -4453,7 +4461,7 @@ class Routing(object):
             ) * self.FCdecay
 
             self.routedUSRFC = self.routedUSRFC + (
-                self.USR_FCload * (timeSec / vos.secondsPerDay())
+                self.USR_FCload * (timeSec / utils.secondsPerDay())
             )
             dUSRFCLat = channelTransFrac * self.routedUSRFC
             self.routedUSRFC = (
@@ -4461,7 +4469,7 @@ class Routing(object):
             ) * self.FCdecay
 
             self.routedintLivFC = self.routedintLivFC + (
-                self.intLiv_FCload * (timeSec / vos.secondsPerDay())
+                self.intLiv_FCload * (timeSec / utils.secondsPerDay())
             )
             dintLivFCLat = channelTransFrac * self.routedintLivFC
             self.routedintLivFC = (
@@ -4471,7 +4479,7 @@ class Routing(object):
             ) * self.FCdecay
 
             self.routedextLivFC = self.routedextLivFC + (
-                self.extLiv_FCload * (timeSec / vos.secondsPerDay())
+                self.extLiv_FCload * (timeSec / utils.secondsPerDay())
             )
             dextLivFCLat = channelTransFrac * self.routedextLivFC
             self.routedextLivFC = (

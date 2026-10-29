@@ -4,12 +4,9 @@ import sys
 
 import pcraster as pcr
 
+from common import utils
 from qualloc.netCDF_recipes import netCDF_file_info
-from qualloc.spatialDataSet2PCR import (
-    compareSpatialAttributes,
-    spatialAttributes,
-    spatialDataSet,
-)
+from qualloc.spatialDataSet2PCR import spatialAttributes, spatialDataSet
 
 logger = logging.getLogger(__name__)
 
@@ -20,14 +17,6 @@ very_small_number = 1.0e-12
 
 NoneType = type(None)
 
-# default file extensions
-file_extensions = {
-    ".map": "pcraster",
-    ".nc": "netcdf",
-    ".nc4": "netcdf",
-    ".tif": "pcraster",
-    "": "",
-}
 
 # file conversion settings
 
@@ -63,61 +52,6 @@ nc_info = netCDF_file_info()
 
 
 # generic functions to process files
-
-
-def compose_filename(filename, path, *args):
-    """
-compose_filename: function that checks whether the filename is an absolute path, \
-and if not merges it with the path provided, normalizes the path and tests if \
-the file exists. Returns the resulting the filename.
-"""
-
-    # make the file name absolute if the file exists
-    if os.path.isfile(filename):
-        filename = os.path.abspath(filename)
-    else:
-        filename = os.path.join(path, filename)
-
-    filename = os.path.normpath(filename)
-
-    # substitute any additional arguments
-    if args != ():
-
-        if not isinstance(args, tuple):
-            args = tuple(args)
-
-        if "%" in filename:
-            try:
-                filename = filename % (args)
-            except Exception:
-                logger.warning(
-                    "additional arguments could not be converted into the file name %s",
-                    filename,
-                )
-
-    return filename, os.path.isfile(filename)
-
-
-def file_is_nc(filename):
-    """
-    file_is_ncfile: tests if the file extension matches that of a netCDF file;
-    returns True if this is the case.
-    """
-
-    file_ext = os.path.splitext(filename)[1]
-
-    return file_extensions[file_ext] == "netcdf"
-
-
-def file_is_pcr(filename):
-    """
-    file_is_ncfile: tests if the file extension matches that of a netCDF file;
-    returns True if this is the case.
-    """
-
-    file_ext = os.path.splitext(filename)[1]
-
-    return file_extensions[file_ext] == "pcraster"
 
 
 def read_file_entry(
@@ -185,9 +119,11 @@ given date. This may concern spatial information or single entries.
         datatype_str = datatype_str.replace("VALUESCALE.", "")
 
     # compose the file name and check that it exists
-    filename, existing_file = compose_filename(filename, inputpath, file_subst_args)
+    filename, existing_file = utils.compose_filename(
+        filename, inputpath, file_subst_args
+    )
 
-    if existing_file and file_is_nc(filename):
+    if existing_file and utils.file_is_nc(filename):
 
         # netCDF: read from the cache
         var_out = nc_info.read_nc_field(
@@ -201,7 +137,7 @@ given date. This may concern spatial information or single entries.
             allow_year_substitution=allow_year_substitution,
         )
 
-    elif existing_file and file_is_pcr(filename):
+    elif existing_file and utils.file_is_pcr(filename):
 
         # PCRaster file
 
@@ -214,7 +150,7 @@ given date. This may concern spatial information or single entries.
 
         data_attributes = spatialAttributes(filename)
         fits_extent, same_resolution, x_resample_ratio, y_resample_ratio = (
-            compareSpatialAttributes(data_attributes, clone_attributes)
+            utils.compareSpatialAttributes(data_attributes, clone_attributes)
         )
 
         file_ext = os.path.splitext(filename)[1]

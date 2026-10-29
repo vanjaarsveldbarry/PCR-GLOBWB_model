@@ -14,6 +14,8 @@ import pyinterp.backends.xarray
 import xarray as xr
 import zarr
 
+from common import utils
+
 logger = logging.getLogger(__name__)
 
 # file cache to reduce opening and closing files
@@ -78,7 +80,7 @@ def readDownscalingZarr(
     dims = ["time", xRef, yRef]
     varName = [item for item in keys if item not in dims][0]
 
-    attributeClone = getCloneAttributes()
+    attributeClone = utils.getCloneAttributes()
     cellsizeClone = attributeClone["cellsize"]
     rowsClone = attributeClone["rows"]
     colsClone = attributeClone["cols"]
@@ -294,7 +296,7 @@ def readDownscalingMeteo(
     )
     logger.debug(f"Using the datetime {date_string}")
 
-    attributeClone = getCloneAttributes()
+    attributeClone = utils.getCloneAttributes()
     cellsizeClone = attributeClone["cellsize"]
     rowsClone = attributeClone["rows"]
     colsClone = attributeClone["cols"]
@@ -442,7 +444,7 @@ def singleTryNetcdf2PCRobjCloneWithoutTime(
 ):
 
     if absolutePath is not None:
-        ncFile = getFullPath(ncFile, absolutePath)
+        ncFile = utils.getFullPath(ncFile, absolutePath)
 
     logger.debug(f"reading variable: {varName} from the file: {ncFile}")
 
@@ -472,7 +474,7 @@ def singleTryNetcdf2PCRobjCloneWithoutTime(
         except Exception:
             pass
 
-    attributeClone = getCloneAttributes()
+    attributeClone = utils.getCloneAttributes()
     cellsizeClone = attributeClone["cellsize"]
     rowsClone = attributeClone["rows"]
     colsClone = attributeClone["cols"]
@@ -480,7 +482,7 @@ def singleTryNetcdf2PCRobjCloneWithoutTime(
     yULClone = attributeClone["yUL"]
     attributeInput = getNetcdfGridAttributes(f)
     cellsizeInput = attributeInput["cellsize"]
-    sameClone = isSameClone(attributeInput)
+    sameClone = utils.isSameClone(attributeInput)
 
     factor = 1
     yslice = slice(None)
@@ -788,7 +790,7 @@ def singleTryNetcdf2PCRobjClone(
     )
     logger.debug(f"Using the datetime {date_string}")
 
-    attributeClone = getCloneAttributes()
+    attributeClone = utils.getCloneAttributes()
     cellsizeClone = attributeClone["cellsize"]
     rowsClone = attributeClone["rows"]
     colsClone = attributeClone["cols"]
@@ -796,7 +798,7 @@ def singleTryNetcdf2PCRobjClone(
     yULClone = attributeClone["yUL"]
     attributeInput = getNetcdfGridAttributes(f)
     cellsizeInput = attributeInput["cellsize"]
-    sameClone = isSameClone(attributeInput)
+    sameClone = utils.isSameClone(attributeInput)
 
     factor = 1
     yslice = slice(None)
@@ -864,7 +866,7 @@ def singleTryNetcdf2PCRobjClone(
 def writePCRmapToDir(v, outFileName, outDir):
     # v: input map file name or value; if the input map and the clone have different
     # grids, the map is resampled
-    fullFileName = getFullPath(outFileName, outDir)
+    fullFileName = utils.getFullPath(outFileName, outDir)
     logger.debug(f"Writing a pcraster map to : {fullFileName}")
     pcr.report(v, fullFileName)
 
@@ -913,7 +915,7 @@ def singleTryReadPCRmapClone(
 
     elif not re.match(r"[0-9.-]*$", v):
         if absolutePath is not None:
-            v = getFullPath(v, absolutePath)
+            v = utils.getFullPath(v, absolutePath)
 
         this_is_a_netcdf_file = False
         if v.endswith(".nc") or v.endswith(".nc4"):
@@ -939,7 +941,7 @@ def singleTryReadPCRmapClone(
 
             # PCRaster format
 
-            sameClone = isSameClone(getPCRasterGridAttributes(v))
+            sameClone = utils.isSameClone(getPCRasterGridAttributes(v))
             if sameClone:
                 PCRmap = pcr.readmap(v)
             else:
@@ -970,15 +972,6 @@ def singleTryReadPCRmapClone(
         PCRmap = pcr.cover(PCRmap, cover)
 
     return PCRmap
-
-
-def isSameClone(attributeInput):
-    # rounded to 6 significant digits: mapattr prints only 6, and it absorbs floating point drift in derived corners
-    attributeClone = getCloneAttributes(arcDegree=False)
-    return all(
-        float(f"{attributeClone[key]:.6g}") == float(f"{attributeInput[key]:.6g}")
-        for key in attributeClone
-    )
 
 
 def getNetcdfGridAttributes(f):
@@ -1033,7 +1026,7 @@ def gdalwarpPCR(input, output, tmpDir, isLddMap=False, isNominalMap=False):
     cOut, err = subprocess.Popen(
         co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
     ).communicate()
-    cloneAtt = getCloneAttributes()
+    cloneAtt = utils.getCloneAttributes()
     xmin = cloneAtt["xUL"]
     ymin = cloneAtt["yUL"] - cloneAtt["rows"] * cloneAtt["cellsize"]
     xmax = cloneAtt["xUL"] + cloneAtt["cols"] * cloneAtt["cellsize"]
@@ -1066,60 +1059,6 @@ def gdalwarpPCR(input, output, tmpDir, isLddMap=False, isNominalMap=False):
     ).communicate()
 
 
-def getFullPath(inputPath, absolutePath, completeFileName=True):
-    # 19 Mar 2013, Edwin H. Sutanudjaja: get the full absolute path of a folder or file
-
-    inputPath = str(inputPath).replace("\\", "/")
-    absolutePath = str(absolutePath).replace("\\", "/")
-
-    # suffixes that can be used
-    suffix = (
-        "/",
-        "_",
-        ".nc4",
-        ".map",
-        ".nc",
-        ".dat",
-        ".txt",
-        ".asc",
-        ".ldd",
-        ".tbl",
-        ".001",
-        ".002",
-        ".003",
-        ".004",
-        ".005",
-        ".006",
-        ".007",
-        ".008",
-        ".009",
-        ".010",
-        ".011",
-        ".012",
-    )
-
-    if (
-        inputPath.startswith("/")
-        or str(inputPath)[1] == ":"
-        or inputPath.startswith("http")
-    ):
-        fullPath = str(inputPath)
-    else:
-        if absolutePath.endswith("/"):
-            absolutePath = str(absolutePath)
-        else:
-            absolutePath = f"{absolutePath}/"
-        fullPath = str(absolutePath) + str(inputPath)
-
-    if completeFileName:
-        if fullPath.endswith(suffix):
-            fullPath = str(fullPath)
-        else:
-            fullPath = f"{fullPath}/"
-
-    return fullPath
-
-
 def set_clone(cloneMapFileName=None):
     """Set the PCRaster clone for the whole process and return pcr.clone().
 
@@ -1148,57 +1087,6 @@ def set_clone(cloneMapFileName=None):
                 f"the clone is already set to a different grid than {cloneMapFileName}"
             )
     return pcr.clone()
-
-
-def getCloneAttributes(arcDegree=True):
-    clone = pcr.clone()
-    cellsize = clone.cellSize()
-    if arcDegree:
-        cellsize = round(cellsize * 360000.0) / 360000.0
-    return {
-        "cellsize": cellsize,
-        "rows": clone.nrRows(),
-        "cols": clone.nrCols(),
-        "xUL": clone.west(),
-        "yUL": clone.north(),
-    }
-
-
-def getMapTotal(mapFile):
-    """outputs the sum of all values in a map file"""
-
-    total, valid = pcr.cellvalue(pcr.maptotal(mapFile), 1)
-    return total
-
-
-def getMinMaxMean(mapFile, ignoreEmptyMap=False):
-    mn = pcr.cellvalue(pcr.mapminimum(mapFile), 1)[0]
-    mx = pcr.cellvalue(pcr.mapmaximum(mapFile), 1)[0]
-    nrValues = pcr.cellvalue(pcr.maptotal(pcr.scalar(pcr.defined(mapFile))), 1)[0]
-    if nrValues == 0.0 and ignoreEmptyMap:
-        logger.warning("map is empty")
-        return 0.0, 0.0, 0.0
-    elif nrValues == 0.0 and not ignoreEmptyMap:
-        logger.warning("map is empty")
-        return 0.0, 0.0, 0.0
-    else:
-        return mn, mx, (getMapTotal(mapFile) / nrValues)
-
-
-def getMapVolume(mapFile, cellareaFile):
-    """returns the sum of all grid cell values"""
-    volume = mapFile * cellareaFile
-    return getMapTotal(volume) / 1
-
-
-def secondsPerDay():
-    return float(3600 * 24)
-
-
-def getValDivZero(x, y, y_lim=smallNumber, z_def=0.0):
-    # division that may involve a zero denominator, in which case a default value is used:
-    # x/y = z if y > y_lim, and z_def (zero by default) if y <= y_lim, where y_lim -> 0
-    return pcr.ifthenelse(y > y_lim, x / pcr.max(y_lim, y), z_def)
 
 
 def fillWithWindowAverage(map, windowLengths, mask):
@@ -1239,43 +1127,6 @@ def regridData2FinerGrid(rescaleFac, coarse, MV):
     return fine
 
 
-def waterBalanceCheck(
-    fluxesIn,
-    fluxesOut,
-    preStorages,
-    endStorages,
-    processName,
-    PrintOnlyErrors,
-    dateStr,
-    threshold=1e-5,
-    landmask=None,
-):
-    """Returns the water balance for a list of input, output, and storage map files"""
-
-    inMap = pcr.spatial(pcr.scalar(0.0))
-    outMap = pcr.spatial(pcr.scalar(0.0))
-    dsMap = pcr.spatial(pcr.scalar(0.0))
-
-    for fluxIn in fluxesIn:
-        inMap += fluxIn
-    for fluxOut in fluxesOut:
-        outMap += fluxOut
-    for preStorage in preStorages:
-        dsMap += preStorage
-    for endStorage in endStorages:
-        dsMap -= endStorage
-
-    a, b, c = getMinMaxMean(inMap + dsMap - outMap)
-    if abs(a) > threshold or abs(b) > threshold:
-        if PrintOnlyErrors:
-
-            bar = "#" * 142
-            logger.error(
-                f"\n\n{bar}\nWARNING !!!!!!!! Water Balance Error {processName} "
-                f"Min {a:f} Max {b:f} Mean {c:f}\n{bar}\n\n\n\n"
-            )
-
-
 def findLastYearInNCTime(ncTimeVariable):
 
     last_datetime = nc.num2date(
@@ -1294,13 +1145,3 @@ def findFirstYearInNCTime(ncTimeVariable):
     )
 
     return first_datetime.year
-
-
-def deg2rad(a):
-
-    return a * pi / 180.0
-
-
-def rad2deg(a):
-
-    return a * 180.0 / pi

@@ -1,10 +1,10 @@
-import datetime
 import math
-import sys
 from calendar import isleap
 from copy import deepcopy
 
 import pcraster as pcr
+
+from common import utils
 
 pcr.setglobaloption("radians")
 # TODO: this setglobaloption affects other parts of PCR-GLOBWB, e.g. the Hamon method
@@ -13,34 +13,6 @@ pcr.setglobaloption("radians")
 NoneType = type(None)
 
 pi = math.pi
-
-
-def get_julian_day_number(date):
-    """
-
-    get_julian_day_number: returns the julian day number in the year.
-
-        Input:
-        ======
-        date:               date in datetime date or datetime format.
-
-        Output:
-        =======
-        julian_day:         integer number of julian day in the present year
-
-    """
-
-    if isinstance(date, datetime.date) or isinstance(date, datetime.datetime):
-        d = datetime.date(date.year, date.month, date.day)
-    else:
-        message_str = "ERROR: date needs to have datetime date or datetime format."
-        sys.exit(message_str)
-
-    d0 = datetime.date(d.year, 1, 1)
-    td = d - d0
-
-    julian_day = int(td.days)
-    return julian_day
 
 
 def get_patm_cor(z):
@@ -653,7 +625,7 @@ precipitation, minimum and maximum daily temperature.
 
 """
 
-        julian_day = get_julian_day_number(date)
+        julian_day = utils.get_julian_day_number(date)
         number_days = 365
         if isleap(date.year):
             number_days = 366

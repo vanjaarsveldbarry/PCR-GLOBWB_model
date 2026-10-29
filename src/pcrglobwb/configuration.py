@@ -9,8 +9,7 @@ import shutil
 import sys
 from configparser import RawConfigParser as ConfigParser
 
-from common import disclaimer
-from common import virtualOS as vos
+from common import disclaimer, utils
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +217,7 @@ class Configuration(object):
                 self.__getattribute__(sec)[opt] = val
 
     def set_input_files(self):
-        self.cloneMap = vos.getFullPath(
+        self.cloneMap = utils.getFullPath(
             self.globalOptions["cloneMap"], self.globalOptions["inputDir"]
         )
 
@@ -226,7 +225,7 @@ class Configuration(object):
         dirsAndFiles = ["precipitationNC", "temperatureNC", "refETPotFileNC"]
         for item in dirsAndFiles:
             if self.meteoOptions[item] != "None":
-                self.meteoOptions[item] = vos.getFullPath(
+                self.meteoOptions[item] = utils.getFullPath(
                     self.meteoOptions[item], self.globalOptions["inputDir"]
                 )
 
@@ -241,12 +240,14 @@ class Configuration(object):
                     self.globalOptions["outputDir"]
                 )
 
-            self.tmpDir = vos.getFullPath("tmp/", self.globalOptions["outputDir"])
+            self.tmpDir = utils.getFullPath("tmp/", self.globalOptions["outputDir"])
 
-            self.outNCDir = vos.getFullPath("netcdf/", self.globalOptions["outputDir"])
+            self.outNCDir = utils.getFullPath(
+                "netcdf/", self.globalOptions["outputDir"]
+            )
 
             # backup of the Python scripts used
-            self.scriptDir = vos.getFullPath(
+            self.scriptDir = utils.getFullPath(
                 "scripts/", self.globalOptions["outputDir"]
             )
 
@@ -254,13 +255,13 @@ class Configuration(object):
             path_of_this_module = os.path.abspath(os.path.dirname(__file__))
             self.starting_directory = path_of_this_module
 
-            self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
+            self.logFileDir = utils.getFullPath("log/", self.globalOptions["outputDir"])
 
-            self.endStateDir = vos.getFullPath(
+            self.endStateDir = utils.getFullPath(
                 "states/", self.globalOptions["outputDir"]
             )
 
-            self.mapsDir = vos.getFullPath("maps/", self.globalOptions["outputDir"])
+            self.mapsDir = utils.getFullPath("maps/", self.globalOptions["outputDir"])
 
             # go to the PCRaster maps directory (so all pcr.report files are saved there)
             os.chdir(self.mapsDir)
@@ -285,19 +286,21 @@ class Configuration(object):
                 # new outputDir (does not exist yet)
                 pass
 
-            self.tmpDir = vos.getFullPath("tmp/", self.globalOptions["outputDir"])
+            self.tmpDir = utils.getFullPath("tmp/", self.globalOptions["outputDir"])
 
             if os.path.exists(self.tmpDir):
                 shutil.rmtree(self.tmpDir)
             os.makedirs(self.tmpDir)
 
-            self.outNCDir = vos.getFullPath("netcdf/", self.globalOptions["outputDir"])
+            self.outNCDir = utils.getFullPath(
+                "netcdf/", self.globalOptions["outputDir"]
+            )
             if os.path.exists(self.outNCDir):
                 shutil.rmtree(self.outNCDir)
             os.makedirs(self.outNCDir)
 
             # backup of the Python scripts used
-            self.scriptDir = vos.getFullPath(
+            self.scriptDir = utils.getFullPath(
                 "scripts/", self.globalOptions["outputDir"]
             )
 
@@ -313,20 +316,20 @@ class Configuration(object):
                 shutil.copy(filename, self.scriptDir)
             # TODO: fix this copying (it does not include subfolders)
 
-            self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
+            self.logFileDir = utils.getFullPath("log/", self.globalOptions["outputDir"])
             cleanLogDir = True
             if os.path.exists(self.logFileDir) and cleanLogDir:
                 shutil.rmtree(self.logFileDir)
             os.makedirs(self.logFileDir)
 
-            self.endStateDir = vos.getFullPath(
+            self.endStateDir = utils.getFullPath(
                 "states/", self.globalOptions["outputDir"]
             )
             if os.path.exists(self.endStateDir):
                 shutil.rmtree(self.endStateDir)
             os.makedirs(self.endStateDir)
 
-            self.mapsDir = vos.getFullPath("maps/", self.globalOptions["outputDir"])
+            self.mapsDir = utils.getFullPath("maps/", self.globalOptions["outputDir"])
             cleanMapDir = True
             if os.path.exists(self.mapsDir) and cleanMapDir:
                 shutil.rmtree(self.mapsDir)

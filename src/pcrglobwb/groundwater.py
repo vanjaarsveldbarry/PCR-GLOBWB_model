@@ -4,6 +4,7 @@ import math
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb.ncConverter import PCR2netCDF
 
@@ -106,7 +107,7 @@ class Groundwater(object):
                     "Limit for annual regional groundwater abstraction is used."
                 )
                 self.limitRegionalAnnualGroundwaterAbstraction = True
-                self.pumpingCapacityNC = vos.getFullPath(
+                self.pumpingCapacityNC = utils.getFullPath(
                     iniItems.waterManagementOptions["pumpingCapacityNC"],
                     self.inputDir,
                     False,
@@ -119,7 +120,7 @@ class Groundwater(object):
 
         # netCDF file with the groundwater properties
         if iniItems.groundwaterOptions["groundwaterPropertiesNC"] != "None":
-            groundwaterPropertiesNC = vos.getFullPath(
+            groundwaterPropertiesNC = utils.getFullPath(
                 iniItems.groundwaterOptions["groundwaterPropertiesNC"], self.inputDir
             )
         else:
@@ -200,7 +201,7 @@ class Groundwater(object):
                     self.inputDir,
                 )
             else:
-                topoPropertiesNC = vos.getFullPath(
+                topoPropertiesNC = utils.getFullPath(
                     iniItems.landSurfaceOptions["topographyNC"], self.inputDir
                 )
                 aquiferWidth = vos.netcdf2PCRobjCloneWithoutTime(
@@ -750,7 +751,7 @@ class Groundwater(object):
             self.recessionCoeff
             * self.avgStorGroundwater
             * (
-                (vos.getValDivZero(self.storGroundwater, self.avgStorGroundwater))
+                (utils.getValDivZero(self.storGroundwater, self.avgStorGroundwater))
                 ** self.baseflow_exponent
             )
         )
@@ -787,7 +788,7 @@ class Groundwater(object):
         self.relativeGroundwaterHead = self.storGroundwater / self.specificYield
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [self.surfaceWaterInf, landSurface.gwRecharge],
                 [self.baseflow, self.nonFossilGroundwaterAbs],
                 [preStorGroundwater],
@@ -799,7 +800,7 @@ class Groundwater(object):
             )
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [pcr.scalar(0.0)],
                 [self.fossilGroundwaterAbstr],
                 [preStorGroundwaterFossil],

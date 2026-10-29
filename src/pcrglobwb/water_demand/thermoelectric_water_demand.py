@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class ThermoelectricWaterDemand(object):
             )
 
         if self.thermoelectricWaterDemandOption:
-            self.thermoelectricWaterDemandFile = vos.getFullPath(
+            self.thermoelectricWaterDemandFile = utils.getFullPath(
                 inputPath=iniItems.waterDemandOptions["thermoelectricWaterDemandFile"],
                 absolutePath=self.inputDir,
                 completeFileName=False,
@@ -90,7 +91,7 @@ class ThermoelectricWaterDemand(object):
             self.thermoelectricReturnFlowFraction = pcr.max(
                 0.0,
                 1.0
-                - vos.getValDivZero(
+                - utils.getValDivZero(
                     self.thermoelectricNettoDemand, self.thermoelectricGrossDemand
                 ),
             )
@@ -349,7 +350,7 @@ class ThermoelectricWaterDemand(object):
         self.thermoelectricReturnFlowFraction = pcr.max(
             0.0,
             1.0
-            - vos.getValDivZero(
+            - utils.getValDivZero(
                 self.thermoelectricNettoDemand, self.thermoelectricGrossDemand
             ),
         )

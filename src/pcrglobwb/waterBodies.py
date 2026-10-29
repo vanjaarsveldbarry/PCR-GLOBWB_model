@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class WaterBodies(object):
             self.resSfAreaInp = iniItems.routingOptions["resSfAreaInp"]
         else:
             self.useNetCDF = True
-            self.ncFileInp = vos.getFullPath(
+            self.ncFileInp = utils.getFullPath(
                 iniItems.routingOptions["waterBodyInputNC"], self.inputDir
             )
 
@@ -349,7 +350,9 @@ class WaterBodies(object):
                 pcr.areamaximum(pcr.scalar(self.waterBodyOut), self.waterBodyIds)
             )
         )
-        a, b, c = vos.getMinMaxMean(pcr.cover(pcr.scalar(test), 1.0) - pcr.scalar(1.0))
+        a, b, c = utils.getMinMaxMean(
+            pcr.cover(pcr.scalar(test), 1.0) - pcr.scalar(1.0)
+        )
         threshold = 1e-3
         if abs(a) > threshold or abs(b) > threshold:
             logger.warning("Missing information in some lakes and/or reservoirs.")
@@ -424,7 +427,7 @@ class WaterBodies(object):
         maxTimestepsToAvgDischargeLong,
         currTimeStep,
         avgChannelDischarge,
-        length_of_time_step=vos.secondsPerDay(),
+        length_of_time_step=utils.secondsPerDay(),
         downstreamDemand=None,
     ):
 
@@ -452,7 +455,7 @@ class WaterBodies(object):
         )
 
         if self.debugWaterBalance:
-            vos.waterBalanceCheck(
+            utils.waterBalanceCheck(
                 [pcr.cover(self.inflow / self.waterBodyArea, 0.0)],
                 [pcr.cover(self.waterBodyOutflow / self.waterBodyArea, 0.0)],
                 [pcr.cover(preStorage / self.waterBodyArea, 0.0)],
@@ -476,7 +479,7 @@ class WaterBodies(object):
         newStorageAtLakeAndReservoirs,
         timestepsToAvgDischarge,
         maxTimestepsToAvgDischargeShort,
-        length_of_time_step=vos.secondsPerDay(),
+        length_of_time_step=utils.secondsPerDay(),
     ):
 
         # new lake and reservoir storage (m3)
@@ -500,11 +503,11 @@ class WaterBodies(object):
                 maxTimestepsToAvgDischargeShort,
                 self.timestepsToAvgDischarge
                 - 1.0
-                + length_of_time_step / vos.secondsPerDay(),
+                + length_of_time_step / utils.secondsPerDay(),
             ),
         )
         deltaInflow = self.inflowInM3PerSec - self.avgInflow
-        R = deltaInflow * (length_of_time_step / vos.secondsPerDay()) / temp
+        R = deltaInflow * (length_of_time_step / utils.secondsPerDay()) / temp
         self.avgInflow = self.avgInflow + R
         self.avgInflow = pcr.max(0.0, self.avgInflow)
 
@@ -514,7 +517,7 @@ class WaterBodies(object):
         self,
         maxTimestepsToAvgDischargeLong,
         avgChannelDischarge,
-        length_of_time_step=vos.secondsPerDay(),
+        length_of_time_step=utils.secondsPerDay(),
         downstreamDemand=None,
     ):
 
@@ -554,11 +557,11 @@ class WaterBodies(object):
                 maxTimestepsToAvgDischargeLong,
                 self.timestepsToAvgDischarge
                 - 1.0
-                + length_of_time_step / vos.secondsPerDay(),
+                + length_of_time_step / utils.secondsPerDay(),
             ),
         )
         deltaOutflow = waterBodyOutflowInM3PerSec - self.avgOutflow
-        R = deltaOutflow * (length_of_time_step / vos.secondsPerDay()) / temp
+        R = deltaOutflow * (length_of_time_step / utils.secondsPerDay()) / temp
         self.avgOutflow = self.avgOutflow + R
         self.avgOutflow = pcr.max(0.0, self.avgOutflow)
 
@@ -576,7 +579,7 @@ class WaterBodies(object):
         return weirFormula
 
     def getLakeOutflow(
-        self, avgChannelDischarge, length_of_time_step=vos.secondsPerDay()
+        self, avgChannelDischarge, length_of_time_step=utils.secondsPerDay()
     ):
 
         # water height (m), a function of storage; Rens used 0.001 m as minimum to make sure there
@@ -661,7 +664,7 @@ class WaterBodies(object):
         )
 
         # downstream demand (m3/s), reduced if storage < lower limit
-        reductionFactor = vos.getValDivZero(
+        reductionFactor = utils.getValDivZero(
             downstreamDemand, self.minResvrFrac * self.waterBodyCap, vos.smallNumber
         )
         reductionFactor = pcr.cover(reductionFactor, 0.0)
@@ -677,7 +680,7 @@ class WaterBodies(object):
             / ((1.0 - self.maxResvrFrac) * self.waterBodyCap),
             0.0,
         ) * pcr.max(
-            0.0, ratioQBankfull * avgOutflow * vos.secondsPerDay() - resvOutflow
+            0.0, ratioQBankfull * avgOutflow * utils.secondsPerDay() - resvOutflow
         )
         # limit floodOutflow: only bring the storage down to 3/4 of the upper limit capacity
         floodOutflow = pcr.max(

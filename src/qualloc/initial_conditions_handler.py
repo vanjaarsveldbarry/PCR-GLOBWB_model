@@ -7,8 +7,8 @@ from copy import deepcopy
 
 import pcraster as pcr
 
-from qualloc.file_handler import compose_filename, file_is_nc, read_file_entry
-from qualloc.model_time import match_date_by_julian_number
+from common import utils
+from qualloc.file_handler import read_file_entry
 from qualloc.netCDF_recipes import get_nc_dates
 
 logger = logging.getLogger(__name__)
@@ -25,9 +25,9 @@ def test_timed_netcdf(filename, path="", time_interval_days=365):
     timed_netcdf = False
     nc_dates = []
 
-    filename, file_exists = compose_filename(filename, path)
+    filename, file_exists = utils.compose_filename(filename, path)
 
-    if file_is_nc(filename) and file_exists:
+    if utils.file_is_nc(filename) and file_exists:
 
         # netCDF file: get the dates
         nc_dates = get_nc_dates(filename)
@@ -249,7 +249,7 @@ date is generated.
     # iterate over the dates and get the matching date
     for date in dates:
 
-        date_index, matched_date, matched_str = match_date_by_julian_number(
+        date_index, matched_date, matched_str = utils.match_date_by_julian_number(
             date, available_dates
         )
 

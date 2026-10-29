@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 from pcrglobwb import groundwater, landSurface, meteo, routing
 
@@ -239,12 +240,12 @@ class PCRGlobWB(object):
             # TODO: improve these water balance checks
             logger.info("Summary excludes lake, reservoir and channel storage")
 
-            totalCellArea = vos.getMapTotal(
+            totalCellArea = utils.getMapTotal(
                 pcr.ifthen(self.landmask, self.routing.cellArea)
             )
             logger.info(f"Total area = {totalCellArea / 1000000.0:e} km2")
 
-            deltaStorageOneYear = vos.getMapVolume(
+            deltaStorageOneYear = utils.getMapVolume(
                 pcr.ifthen(self.landmask, landWaterStoresAtBeginning)
                 - pcr.ifthen(self.landmask, self.storageAtFirstDay),
                 self.routing.cellArea,
@@ -269,7 +270,7 @@ class PCRGlobWB(object):
             variableList += ["waterBalance", "absWaterBalance", "nonIrrigationWaterUse"]
 
             for var in variableList:
-                volume = vos.getMapVolume(
+                volume = utils.getMapVolume(
                     self.__getattribute__(f"{var}Acc"), self.routing.cellArea
                 )
 
@@ -286,7 +287,7 @@ class PCRGlobWB(object):
             logger.info("")
             logger.info("The following summary is for surface water bodies.")
 
-            deltaChannelStorageOneYear = vos.getMapTotal(
+            deltaChannelStorageOneYear = utils.getMapTotal(
                 pcr.ifthen(self.landmask, surfaceWaterStoresAtEnd)
                 - pcr.ifthen(self.landmask, self.channelVolumeAtFirstDay)
             )
@@ -300,7 +301,7 @@ class PCRGlobWB(object):
 
             variableList = ["waterBodyEvaporation"]
             for var in variableList:
-                volume = vos.getMapVolume(
+                volume = utils.getMapVolume(
                     self.__getattribute__(f"{var}Acc"), self.routing.cellArea
                 )
                 logger.info(
@@ -312,7 +313,7 @@ class PCRGlobWB(object):
                     volume * 1000 / totalCellArea,
                 )
 
-            surfaceWaterInputTotal = vos.getMapTotal(self.surfaceWaterInputAcc)
+            surfaceWaterInputTotal = utils.getMapTotal(self.surfaceWaterInputAcc)
             logger.info(
                 "Accumulated %s days 1 to %i in %i = %e km3 = %e mm",
                 "surfaceWaterInput",
@@ -322,7 +323,7 @@ class PCRGlobWB(object):
                 surfaceWaterInputTotal * 1000 / totalCellArea,
             )
 
-            dischargeAtPitTotal = vos.getMapTotal(self.dischargeAtPitAcc)
+            dischargeAtPitTotal = utils.getMapTotal(self.dischargeAtPitAcc)
             logger.info(
                 "Accumulated %s days 1 to %i in %i = %e km3 = %e mm",
                 "dischargeAtPitTotal",
@@ -442,7 +443,7 @@ class PCRGlobWB(object):
         incomingFreeWater = self.landSurface.incomingFreeWater / self.routing.cellArea
         transportFreeWater = self.landSurface.transportFreeWater / self.routing.cellArea
 
-        vos.waterBalanceCheck(
+        utils.waterBalanceCheck(
             [
                 precipitation,
                 surfaceWaterInf,

@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class DomesticWaterDemand(object):
             logger.info("Domestic water demand is NOT included in the calculation.")
 
         if self.domesticWaterDemandOption:
-            self.domesticWaterDemandFile = vos.getFullPath(
+            self.domesticWaterDemandFile = utils.getFullPath(
                 inputPath=iniItems.waterDemandOptions["domesticWaterDemandFile"],
                 absolutePath=self.inputDir,
                 completeFileName=False,
@@ -128,7 +129,9 @@ class DomesticWaterDemand(object):
             self.domesticReturnFlowFraction = pcr.max(
                 0.0,
                 1.0
-                - vos.getValDivZero(self.domesticNettoDemand, self.domesticGrossDemand),
+                - utils.getValDivZero(
+                    self.domesticNettoDemand, self.domesticGrossDemand
+                ),
             )
 
     def calculate_domestic_water_demand_for_date(self, currTimeStep):

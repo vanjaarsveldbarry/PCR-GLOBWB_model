@@ -5,11 +5,7 @@ from copy import deepcopy
 
 import pcraster as pcr
 
-from qualloc.basic_functions import (
-    pcr_return_val_div_zero,
-    pcr_share_identical_maps,
-    sum_list,
-)
+from common import utils
 from qualloc.file_handler import close_nc_cache, read_file_entry
 from qualloc.groundwater import groundwater
 from qualloc.initial_conditions_handler import (
@@ -17,7 +13,6 @@ from qualloc.initial_conditions_handler import (
     get_initial_conditions,
 )
 from qualloc.qualloc_reporting import qualloc_report_initial_conditions
-from qualloc.spatialDataSet2PCR import cloneAttributes
 from qualloc.surfacewater import surfacewater
 from qualloc.water_management import (
     very_small_number,
@@ -51,20 +46,6 @@ demand_forcing_variables = (
     "thermoelectricnettodemand",
     "environmentgrossdemand",
 )
-
-
-def ncvariable_name(section, key, default=None):
-    """
-ncvariable_name: returns the name of the netCDF variable that holds the entry \
-of key in the given configuration section. This is the key itself, or default \
-where given, unless the section provides an explicit <key>_ncvariable override; \
-PCRaster input ignores the name and is unaffected.
-"""
-
-    if isinstance(default, NoneType):
-        default = key
-
-    return section.get(f"{key}_ncvariable", default)
 
 
 class qualloc_model(object):
@@ -131,7 +112,7 @@ class qualloc_model(object):
 
         self.model_time = model_time
 
-        self.model_configuration.clone_attributes = cloneAttributes()
+        self.model_configuration.clone_attributes = utils.cloneAttributes()
 
         logger.info(
             str.join(
@@ -250,14 +231,16 @@ class qualloc_model(object):
 
         ldd = read_file_entry(
             filename=self.model_configuration.surfacewater["ldd"],
-            variablename=ncvariable_name(self.model_configuration.surfacewater, "ldd"),
+            variablename=utils.ncvariable_name(
+                self.model_configuration.surfacewater, "ldd"
+            ),
             inputpath=self.model_configuration.general["inputpath"],
             clone_attributes=self.model_configuration.clone_attributes,
             datatype=pcr.Ldd,
         )
         channel_gradient = read_file_entry(
             filename=self.model_configuration.surfacewater["channel_gradient"],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.surfacewater, "channel_gradient"
             ),
             inputpath=self.model_configuration.general["inputpath"],
@@ -266,7 +249,7 @@ class qualloc_model(object):
         )
         channel_width = read_file_entry(
             filename=self.model_configuration.surfacewater["channel_width"],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.surfacewater, "channel_width"
             ),
             inputpath=self.model_configuration.general["inputpath"],
@@ -275,7 +258,7 @@ class qualloc_model(object):
         )
         channel_length = read_file_entry(
             filename=self.model_configuration.surfacewater["channel_length"],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.surfacewater, "channel_length"
             ),
             inputpath=self.model_configuration.general["inputpath"],
@@ -284,7 +267,7 @@ class qualloc_model(object):
         )
         mannings_n = read_file_entry(
             filename=self.model_configuration.surfacewater["mannings_n"],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.surfacewater, "mannings_n"
             ),
             inputpath=self.model_configuration.general["inputpath"],
@@ -340,7 +323,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "groundwater_allocation_zones"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "groundwater_allocation_zones",
             ),
@@ -352,7 +335,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "surfacewater_allocation_zones"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "surfacewater_allocation_zones",
             ),
@@ -364,7 +347,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "desalwater_allocation_zones"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management, "desalwater_allocation_zones"
             ),
             inputpath=self.model_configuration.general["inputpath"],
@@ -386,7 +369,7 @@ class qualloc_model(object):
 
         # identical zone maps share one object, so the allocation can combine sources
         # (group_sources_by_zones groups them by object); add new sources here
-        allocation_zones = pcr_share_identical_maps(
+        allocation_zones = utils.pcr_share_identical_maps(
             {
                 "groundwater": groundwater_allocation_zones,
                 "surfacewater": surfacewater_allocation_zones,
@@ -402,7 +385,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "groundwater_withdrawal_points"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "groundwater_withdrawal_points",
             ),
@@ -414,7 +397,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "surfacewater_withdrawal_points"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "surfacewater_withdrawal_points",
             ),
@@ -426,7 +409,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "desalwater_withdrawal_points"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "desalwater_withdrawal_points",
             ),
@@ -443,7 +426,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "groundwater_withdrawal_capacity"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "groundwater_withdrawal_capacity",
             ),
@@ -455,7 +438,7 @@ class qualloc_model(object):
             filename=self.model_configuration.water_management[
                 "surfacewater_withdrawal_capacity"
             ],
-            variablename=ncvariable_name(
+            variablename=utils.ncvariable_name(
                 self.model_configuration.water_management,
                 "surfacewater_withdrawal_capacity",
             ),
@@ -1278,7 +1261,9 @@ class qualloc_model(object):
             longterm_potential_withdrawal_per_sector=potential_withdrawal_per_sector,
         )
 
-        potential_withdrawal = sum_list(list(potential_withdrawal_per_sector.values()))
+        potential_withdrawal = utils.sum_list(
+            list(potential_withdrawal_per_sector.values())
+        )
 
         # actual renewable withdrawals, based on the instantaneous channel storage (m3/day)
         actual_withdrawal = pcr.ifthen(
@@ -1299,7 +1284,7 @@ class qualloc_model(object):
             (
                 sector_name,
                 actual_withdrawal
-                * pcr_return_val_div_zero(
+                * utils.pcr_return_val_div_zero(
                     potential_withdrawal_per_sector[sector_name],
                     potential_withdrawal,
                     very_small_number,
@@ -1355,7 +1340,9 @@ class qualloc_model(object):
             )
         )
 
-        potential_withdrawal = sum_list(list(potential_withdrawal_per_sector.values()))
+        potential_withdrawal = utils.sum_list(
+            list(potential_withdrawal_per_sector.values())
+        )
 
         # actual renewable and non-renewable withdrawals (m3/day)
         renewable_withdrawal = pcr.min(groundwater_availability, potential_withdrawal)
@@ -1375,7 +1362,7 @@ class qualloc_model(object):
             (
                 sector_name,
                 renewable_withdrawal
-                * pcr_return_val_div_zero(
+                * utils.pcr_return_val_div_zero(
                     potential_withdrawal_per_sector[sector_name],
                     potential_withdrawal,
                     very_small_number,
@@ -1389,7 +1376,7 @@ class qualloc_model(object):
             (
                 sector_name,
                 nonrenewable_withdrawal
-                * pcr_return_val_div_zero(
+                * utils.pcr_return_val_div_zero(
                     potential_withdrawal_per_sector[sector_name],
                     potential_withdrawal,
                     very_small_number,

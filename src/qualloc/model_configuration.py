@@ -7,7 +7,7 @@ import stat
 import sys
 from configparser import RawConfigParser as ConfigParser
 
-from qualloc.basic_functions import convert_string_to_list, get_decision
+from common import utils
 
 logger = logging.getLogger(__name__)
 
@@ -357,7 +357,7 @@ directories using information from the model configuration.
                     "do you want to continue?",
                 ),
             )
-            result = get_decision(question_str, possible_outcomes)
+            result = utils.get_decision(question_str, possible_outcomes)
 
             if result:
                 question_str = str.join(
@@ -367,7 +367,7 @@ directories using information from the model configuration.
                         "Are you sure?",
                     ),
                 )
-                result = get_decision(question_str, possible_outcomes)
+                result = utils.get_decision(question_str, possible_outcomes)
 
                 # halt unless the answer is yes
                 if not result:
@@ -434,7 +434,7 @@ directories using information from the model configuration.
 
             if possible_list:
 
-                value = convert_string_to_list(val_str, separators)
+                value = utils.convert_string_to_list(val_str, separators)
 
                 # convert every entry to the right data type
                 for ix in range(len(value)):

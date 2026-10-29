@@ -2,6 +2,7 @@ import logging
 
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class LivestockWaterDemand(object):
             logger.info("Livestock water demand is NOT included in the calculation.")
 
         if self.livestockWaterDemandOption:
-            self.livestockWaterDemandFile = vos.getFullPath(
+            self.livestockWaterDemandFile = utils.getFullPath(
                 inputPath=iniItems.waterDemandOptions["livestockWaterDemandFile"],
                 absolutePath=self.inputDir,
                 completeFileName=False,
@@ -125,7 +126,7 @@ class LivestockWaterDemand(object):
             self.livestockReturnFlowFraction = pcr.max(
                 0.0,
                 1.0
-                - vos.getValDivZero(
+                - utils.getValDivZero(
                     self.livestockNettoDemand, self.livestockGrossDemand
                 ),
             )

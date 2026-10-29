@@ -1,5 +1,6 @@
 import pcraster as pcr
 
+from common import utils
 from common import virtualOS as vos
 
 
@@ -37,7 +38,7 @@ class SoilAndTopoParameters(object):
                 if var != "slopeLength":
                     vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
         else:
-            topoPropertiesNC = vos.getFullPath(
+            topoPropertiesNC = utils.getFullPath(
                 optionDict["topographyNC"], self.inputDir
             )
             for var in topoParams:
@@ -129,7 +130,7 @@ class SoilAndTopoParameters(object):
                 vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
 
         else:
-            soilPropertiesNC = vos.getFullPath(
+            soilPropertiesNC = utils.getFullPath(
                 optionDict["soilPropertiesNC"], self.inputDir
             )
             for var in soilParameters:
@@ -229,7 +230,7 @@ class SoilAndTopoParameters(object):
                 vars(self)[temp] = pcr.cover(vars(self)[temp], 0.0)
 
         else:
-            soilPropertiesNC = vos.getFullPath(
+            soilPropertiesNC = utils.getFullPath(
                 optionDict["soilPropertiesNC"], self.inputDir
             )
             for var in soilStorages:

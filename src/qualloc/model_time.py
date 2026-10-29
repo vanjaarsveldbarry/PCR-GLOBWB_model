@@ -2,143 +2,10 @@ import calendar
 import datetime
 import logging
 import sys
-from copy import deepcopy
 
-import numpy as np
+from common import utils
 
 logger = logging.getLogger(__name__)
-
-
-def get_weights_from_dates(dates):
-
-    # weights of the time increments of dates over the total length; input is a
-    # sequence of dates (list, numpy array), output is a dictionary with the dates
-    # as keys
-
-    seq_type = type(dates)
-
-    d = deepcopy(dates)
-
-    if seq_type == list:
-        d = np.array(d)
-
-    # flatten and sort the dates
-    d = d.ravel()
-    d.sort()
-
-    w = np.zeros(d.size)
-
-    # add a final date
-    d = np.append(d, datetime.datetime(d[0].year + 1, d[0].month, d[0].day))
-
-    # iterate over the weights to get the date differences
-    delta_d = d[-1] - d[0]
-    for ix in range(w.size):
-
-        w[ix] = (d[ix + 1] - d[ix]) / delta_d
-
-    # cast the weights to the desired type
-    if seq_type == list:
-        w = w.tolist()
-
-    return dict((d[ix], w[ix]) for ix in range(len(w)))
-
-
-def get_julian_daynumber(date):
-
-    # integer julian day number of a date
-
-    return int((date - datetime.datetime(date.year, 1, 1)).days)
-
-
-def match_date_by_julian_number(date, dates, within_same_month=True):
-    """
-    Output:
-    =======
-match_date_by_julian_number: function that allows for date substitution in the water management \
-module.
-
-    Input:
-    ======
-    date:                   date provided;
-    dates:                  array of available dates to which the provided
-                            dates should be matched;
-    date_selection_method:  date selection method, default value is 'exact';
-                            can be 'exact', 'before', or 'after'.
-
-    Output:
-    =======
-    date_index:             date index matching the sought date to the av-
-                            ailable dates;
-    matched_date:           the date in the available dates that matches the
-                            date index;
-    message_str:            message string on the date selction for subsequent
-                            logging.
-
-"""
-
-    message_str = ""
-
-    julian_day = get_julian_daynumber(date)
-    month = date.month
-    year = date.year
-
-    if isinstance(dates, list):
-        dates = np.array(dates)
-
-    julian_days = np.zeros(dates.shape, dtype=int)
-    months = np.zeros(dates.shape, dtype=int)
-    years = np.zeros(dates.shape, dtype=int)
-    ix = 0
-    for sdate in dates:
-        julian_days[ix] = get_julian_daynumber(sdate)
-        months[ix] = sdate.month
-        years[ix] = sdate.month
-        ix = ix + 1
-
-    ixs = np.arange(dates.size, dtype=int)
-    ixs.shape = dates.shape
-
-    devs = np.abs(julian_days - julian_day)
-
-    if within_same_month and np.any(months == month):
-        mask = months == month
-    else:
-        mask = months != 13
-        if within_same_month:
-            message_str = (
-                f"; Warning: month {month} is not present in the provided dates"
-            )
-
-    if year in years:
-        mask = mask & (years == year)
-
-    # halt if the mask selects nothing
-    if np.size(devs[mask]) > 0:
-
-        devs = devs[mask]
-        ixs = ixs[mask]
-
-        min_dev = devs.min()
-        date_index = int(ixs[devs == min_dev][0])
-
-    matched_date = dates[date_index]
-    message_str = str.join(
-        "",
-        (
-            f"date {date} is matched with {matched_date} in the available dates",
-            message_str,
-        ),
-    )
-
-    return date_index, matched_date, message_str
-
-
-def is_last_day_month(date):
-    """returns if it is thelast of of the month"""
-    today = date.day
-    last_day = calendar.monthrange(date.year, date.month)[1]
-    return today == last_day
 
 
 class model_time(object):
@@ -200,7 +67,7 @@ class model_time(object):
         month = self.date.month
         day = self.date.day
 
-        self.julianday = get_julian_daynumber(self.date)
+        self.julianday = utils.get_julian_daynumber(self.date)
 
         # special markers
         self.report_flags["daily"] = True

@@ -43,7 +43,11 @@ def retry(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        source = next(iter(signature.bind(*args, **kwargs).arguments.values()))
+        arguments = signature.bind(*args, **kwargs).arguments
+        source = next(iter(arguments.values()))
+        absolute_path = arguments.get("absolutePath")
+        if not any(str(p).startswith("http") for p in (source, absolute_path)):
+            return func(*args, **kwargs)
         for attempt in range(1, max_num_of_tries + 1):
             try:
                 return func(*args, **kwargs)

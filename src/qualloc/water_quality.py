@@ -303,12 +303,10 @@ class water_quality(object):
                 )
 
                 # suitability fraction and total
-                suitability_per_constituent[constituent_name] = (
-                    utils.pcr_return_val_div_zero(
-                        constituent_state[constituent_name] - limit_min,
-                        limit_max - limit_min,
-                        very_small_number,
-                    )
+                suitability_per_constituent[constituent_name] = utils.getValDivZero(
+                    constituent_state[constituent_name] - limit_min,
+                    limit_max - limit_min,
+                    very_small_number,
                 )
 
             # overall suitability per sector: the most unsuitable constituent dominates;
@@ -393,7 +391,7 @@ class water_quality(object):
                 zones_per_sector[sector_name],
             )
 
-            demand_sector_fraction = utils.pcr_return_val_div_zero(
+            demand_sector_fraction = utils.getValDivZero(
                 demand_sector_area, demand_total_area, very_small_number
             )
 
@@ -413,7 +411,7 @@ class water_quality(object):
                 availability_suitable_sector, zones_per_sector[sector_name]
             )
 
-            availability_sector_fraction = utils.pcr_return_val_div_zero(
+            availability_sector_fraction = utils.getValDivZero(
                 suitability_sector_area,
                 availability_suitable_sector_area,
                 very_small_number,
@@ -431,7 +429,7 @@ class water_quality(object):
         # normalize the quality weights
         weight_total = utils.sum_list(list(weight_per_sector.values()))
         for sector_name in sector_names:
-            weight_per_sector[sector_name] = utils.pcr_return_val_div_zero(
+            weight_per_sector[sector_name] = utils.getValDivZero(
                 weight_per_sector[sector_name], weight_total, very_small_number
             )
 

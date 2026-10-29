@@ -752,7 +752,7 @@ total_return_flow_ini                      : total return flow [m3/day]
             maximum_monthly_longterm_potential_withdrawal, region_ids
         )
 
-        withdrawal_rate = utils.pcr_return_val_div_zero(
+        withdrawal_rate = utils.getValDivZero(
             maximum_monthly_longterm_potential_withdrawal,
             total_maximum_monthly_longterm_potential_withdrawal,
             very_small_number,
@@ -1917,7 +1917,7 @@ total_return_flow_ini                      : total return flow [m3/day]
 
             withdrawal_capacity_remaining_per_sector = {}
             for sector_name in sector_names:
-                sector_rate = utils.pcr_return_val_div_zero(
+                sector_rate = utils.getValDivZero(
                     utils.get_zonal_total(
                         unmet_demand_per_sector[sector_name], zones[sector_name]
                     ),
@@ -1959,7 +1959,7 @@ total_return_flow_ini                      : total return flow [m3/day]
             )
 
             # potential non-renewable withdrawal per sector (m3/day)
-            allocation_rate = utils.pcr_return_val_div_zero(
+            allocation_rate = utils.getValDivZero(
                 availability_per_sector,
                 utils.get_zonal_total(availability_per_sector, zones[sector_name]),
                 very_small_number,
@@ -2062,7 +2062,7 @@ total_return_flow_ini                      : total return flow [m3/day]
             distribution_ratio = dict(
                 (
                     source_name,
-                    utils.pcr_return_val_div_zero(
+                    utils.getValDivZero(
                         self.longterm_potential_withdrawals_per_sector["renewable"][
                             source_name
                         ][sector_name],
@@ -2120,7 +2120,7 @@ total_return_flow_ini                      : total return flow [m3/day]
             distribution_ratio = dict(
                 (
                     source_name,
-                    utils.pcr_return_val_div_zero(
+                    utils.getValDivZero(
                         self.longterm_potential_withdrawals_per_sector["nonrenewable"][
                             source_name
                         ][sector_name],
@@ -2369,7 +2369,7 @@ total_return_flow_ini                      : total return flow [m3/day]
                     shortterm_potential_withdrawal_per_sector[sector_name],
                     potential_surfacewater_availability
                     * suitability_per_sector[sector_name]
-                    * utils.pcr_return_val_div_zero(
+                    * utils.getValDivZero(
                         shortterm_potential_withdrawal_per_sector[sector_name],
                         shortterm_potential_withdrawal,
                         very_small_number,
@@ -2906,10 +2906,7 @@ total_return_flow_ini                      : total return flow [m3/day]
         # return flow ratio; small gross water demands give a ratio of zero
         return_flow_ratio = pcr.max(
             0.00,
-            1.00
-            - utils.pcr_return_val_div_zero(
-                net_demand, gross_demand, very_small_number
-            ),
+            1.00 - utils.getValDivZero(net_demand, gross_demand, very_small_number),
         )
         return return_flow_ratio
 

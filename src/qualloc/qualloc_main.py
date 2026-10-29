@@ -1284,7 +1284,7 @@ class qualloc_model(object):
             (
                 sector_name,
                 actual_withdrawal
-                * utils.pcr_return_val_div_zero(
+                * utils.getValDivZero(
                     potential_withdrawal_per_sector[sector_name],
                     potential_withdrawal,
                     very_small_number,
@@ -1362,7 +1362,7 @@ class qualloc_model(object):
             (
                 sector_name,
                 renewable_withdrawal
-                * utils.pcr_return_val_div_zero(
+                * utils.getValDivZero(
                     potential_withdrawal_per_sector[sector_name],
                     potential_withdrawal,
                     very_small_number,
@@ -1376,7 +1376,7 @@ class qualloc_model(object):
             (
                 sector_name,
                 nonrenewable_withdrawal
-                * utils.pcr_return_val_div_zero(
+                * utils.getValDivZero(
                     potential_withdrawal_per_sector[sector_name],
                     potential_withdrawal,
                     very_small_number,

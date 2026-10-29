@@ -130,8 +130,26 @@ def secondsPerDay():
 
 
 def getValDivZero(x, y, y_lim=smallNumber, z_def=0.0):
-    # division that may involve a zero denominator, in which case a default value is used:
-    # x/y = z if y > y_lim, and z_def (zero by default) if y <= y_lim, where y_lim -> 0
+    """
+getValDivZero: divides PCRaster fields and returns a default value where the \
+denominator is too small, to avoid dividing by zero:
+
+    z = x / y           if y > y_lim
+    z = z_def           if y <= y_lim
+
+    Input:
+    ======
+    x:                  numerator;
+    y:                  denominator;
+    y_lim:              value against which the denominator y is tested;
+                        default is smallNumber;
+    z_def:              value returned where y <= y_lim; default is zero.
+
+    Output:
+    =======
+    z:                  result of the fraction x / y.
+
+"""
     return pcr.ifthenelse(y > y_lim, x / pcr.max(y_lim, y), z_def)
 
 
@@ -298,51 +316,6 @@ Returns a dictionary with the name of the numpy functions as keys and the count
     stat_val["count"] = a.size
 
     return stat_val
-
-
-def pcr_return_val_div_zero(x, y, y_lim, z_def=0.00, test_absolute=False):
-    """
-pcr_return_val_div_zero: function that tests the denominator in a division of \
-PCRaster fields on the occurrence of (small) values and returns a default \
-answer where this condition is met:
-
-    z = x / y           if y > y_lim
-    z = z_def           if y <= y_lim
-
-This function is typically intended to avoid errors when dividing by zero.
-
-    Input:
-    ======
-    x_num:              numerator of the fraction of which result is z;
-    y_denom:            denominator of the fraction of which the result is z;
-    y_lim:              value against which the denominator y is tested;
-    z_def:              value that is returned if y <= y_lim; default value is
-                        zero;
-    test_absolute:      boolean variable that tests absolute values of y; this
-                        value should be set to True if the function crosses
-                        zero. Default is False.
-
-    Output:
-    =======
-    z:                  result of the fraction x / y.
-
-"""
-
-    if test_absolute:
-        # test the positive values of x and y against their original functions
-        z_sign = pcr.ifthenelse(
-            pcr.abs(x) != x, pcr.scalar(-1), pcr.scalar(1)
-        ) * pcr.ifthenelse(pcr.abs(y) != y, pcr.scalar(-1), pcr.scalar(1))
-        # the division is done in absolute terms; the sign follows from z_sign
-        z = z_sign * pcr.ifthenelse(
-            pcr.abs(y) > pcr.abs(y_lim),
-            pcr.abs(x) / pcr.max(pcr.abs(y_lim), pcr.abs(y)),
-            pcr.abs(z_def),
-        )
-    else:
-        z = pcr.ifthenelse(y > y_lim, x / pcr.max(y_lim, y), z_def)
-
-    return z
 
 
 def pcr_same_map(map_a: pcr.Field, map_b: pcr.Field) -> bool:
@@ -862,7 +835,7 @@ the total of the provided zones.
 
     totals = get_zonal_total(local_values, zones)
 
-    fractional_values = pcr_return_val_div_zero(local_values, totals, very_small_number)
+    fractional_values = getValDivZero(local_values, totals, very_small_number)
 
     return fractional_values
 

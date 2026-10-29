@@ -127,7 +127,7 @@ def split_sources(
 
         # untapped supply: the group's untapped fraction of each source's supply
         group_availability = utils.sum_list([availability[s] for s in members])
-        untapped_fraction = utils.pcr_return_val_div_zero(
+        untapped_fraction = utils.getValDivZero(
             group_untapped[g], group_availability, very_small_number
         )
 
@@ -139,7 +139,7 @@ def split_sources(
 
         for s in members:
             untapped[s] = availability[s] * untapped_fraction
-            allocated[s] = group_allocated[g] * utils.pcr_return_val_div_zero(
+            allocated[s] = group_allocated[g] * utils.getValDivZero(
                 zonal_availability[s], zonal_availability_total, very_small_number
             )
 
@@ -204,7 +204,7 @@ def obtain_allocation_ratio(
     # Demand share:
     # The local demand as a proportion of the zonal demand
     demand_share = {
-        s: utils.pcr_return_val_div_zero(
+        s: utils.getValDivZero(
             demand,
             zonal_demand[s],
             very_small_number,
@@ -223,7 +223,7 @@ def obtain_allocation_ratio(
     # allocation over all sources
     potential_allocation_total = utils.sum_list(list(potential_allocation.values()))
     source_share = {
-        s: utils.pcr_return_val_div_zero(
+        s: utils.getValDivZero(
             potential_allocation[s],
             potential_allocation_total,
             very_small_number,
@@ -421,7 +421,7 @@ def _allocate_demand_to_availability(
         # The zonal allocation as a proportion of the zonal untapped supply; every cell
         # in the zone loses this fraction of its untapped supply
         withdrawal_fraction = {
-            s: utils.pcr_return_val_div_zero(
+            s: utils.getValDivZero(
                 zonal_allocation[s],
                 zonal_untapped[s],
                 very_small_number,
@@ -719,9 +719,7 @@ def allocate_demand_to_availability_with_options(
             # The untapped supply of each other source as a proportion of the surplus
             surplus = utils.sum_list([untapped[s] for s in other_sources])
             source_share = {
-                s: utils.pcr_return_val_div_zero(
-                    untapped[s], surplus, very_small_number
-                )
+                s: utils.getValDivZero(untapped[s], surplus, very_small_number)
                 for s in other_sources
             }
 
@@ -735,7 +733,7 @@ def allocate_demand_to_availability_with_options(
             # fraction of the zonal surplus to free: enough to cover the zonal deficit,
             # at most all of it; nothing can be freed without surplus
             allocation_ratio = pcr.min(
-                utils.pcr_return_val_div_zero(
+                utils.getValDivZero(
                     zonal_deficit,
                     zonal_surplus,
                     very_small_number,
@@ -778,7 +776,7 @@ def allocate_demand_to_availability_with_options(
             )
             withdrawal_fraction = pcr.min(
                 1.0,
-                utils.pcr_return_val_div_zero(
+                utils.getValDivZero(
                     total_supply_freed,
                     zonal_withdrawn_source,
                     very_small_number,
@@ -791,9 +789,7 @@ def allocate_demand_to_availability_with_options(
                 0,
                 deficit
                 - total_supply_freed
-                * utils.pcr_return_val_div_zero(
-                    deficit, zonal_deficit, very_small_number
-                ),
+                * utils.getValDivZero(deficit, zonal_deficit, very_small_number),
             )
 
         # repeat the reallocation with the freed supply
@@ -985,7 +981,7 @@ def allocate_withdrawals_to_demand(
 
             # Demand share:
             # The local demand as a proportion of the zonal demand
-            demand_share = utils.pcr_return_val_div_zero(
+            demand_share = utils.getValDivZero(
                 unmet[sector], zonal_unmet, very_small_number
             )
 
@@ -1002,7 +998,7 @@ def allocate_withdrawals_to_demand(
             # Withdrawal fraction:
             # The zonal allocation as a proportion of the zonal unused withdrawal; every
             # cell in the zone loses this fraction of its unused withdrawal
-            withdrawal_fraction = utils.pcr_return_val_div_zero(
+            withdrawal_fraction = utils.getValDivZero(
                 zonal_allocation, zonal_unused, very_small_number
             )
             withdrawal_fraction = pcr.min(withdrawal_fraction, 1)

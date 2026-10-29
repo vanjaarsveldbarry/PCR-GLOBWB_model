@@ -2,10 +2,8 @@ import calendar
 import datetime
 import logging
 import math
-import os
 import re
-import shutil
-import subprocess
+import struct
 
 import netCDF4 as nc
 import numpy as np
@@ -13,8 +11,11 @@ import pcraster as pcr
 import pyinterp.backends.xarray
 import xarray as xr
 import zarr
+from osgeo import gdal
 
 from common import utils
+
+gdal.UseExceptions()
 
 logger = logging.getLogger(__name__)
 
@@ -945,14 +946,7 @@ def singleTryReadPCRmapClone(
             if sameClone:
                 PCRmap = pcr.readmap(v)
             else:
-                # resample using GDAL
-                output = f"{tmpDir}temp.map"
-                _ = gdalwarpPCR(v, output, tmpDir, isLddMap, isNomMap)
-                # read and delete the temporary file
-                PCRmap = pcr.readmap(output)
-                if os.path.isdir(tmpDir):
-                    shutil.rmtree(tmpDir)
-                os.makedirs(tmpDir)
+                PCRmap = gdalwarpPCR(v, isLddMap or isNomMap)
     else:
         PCRmap = pcr.spatial(pcr.scalar(float(v)))
 
@@ -988,75 +982,48 @@ def getNetcdfGridAttributes(f):
 
 
 def getPCRasterGridAttributes(mapFile):
-    result = subprocess.run(
-        ["mapattr", "-p", str(mapFile)], capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"Cannot read the map attributes of {mapFile} with mapattr: "
-            f"{result.stderr.strip() or result.stdout.strip()}"
-        )
-    attributes = {}
-    for line in result.stdout.splitlines():
-        parts = line.split()
-        if len(parts) >= 2:
-            attributes[parts[0]] = parts[-1]
+    # CSF raster header; PCRaster always writes it little-endian
+    with open(mapFile, "rb") as f:
+        header = f.read(132)
+    if not header.startswith(b"RUU CROSS SYSTEM MAP FORMAT"):
+        raise RuntimeError(f"{mapFile} is not a PCRaster map")
+    xUL, yUL, rows, cols, cellsize = struct.unpack_from("<ddIId", header, 84)
     return {
-        "cellsize": float(attributes["cell_length"]),
-        "rows": int(attributes["rows"]),
-        "cols": int(attributes["columns"]),
-        "xUL": float(attributes["xUL"]),
-        "yUL": float(attributes["yUL"]),
+        "cellsize": cellsize,
+        "rows": rows,
+        "cols": cols,
+        "xUL": xUL,
+        "yUL": yUL,
     }
 
 
-def gdalwarpPCR(input, output, tmpDir, isLddMap=False, isNominalMap=False):
-    # 19 Mar 2013, Edwin H. Sutanudjaja; all input maps must be PCRaster maps
-    # remove temporary files
-    co = f"rm {tmpDir}*.*"
-    cOut, err = subprocess.Popen(
-        co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
-    ).communicate()
-    # convert files to tif
-    co = f"gdal_translate -ot Float64 {input} {tmpDir}tmp_inp.tif"
-    if isLddMap:
-        co = f"gdal_translate -ot Int32 {input} {tmpDir}tmp_inp.tif"
-    if isNominalMap:
-        co = f"gdal_translate -ot Int32 {input} {tmpDir}tmp_inp.tif"
-    cOut, err = subprocess.Popen(
-        co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
-    ).communicate()
+def gdalwarpPCR(input, isInteger=False):
+    # nearest-neighbour resample of a PCRaster map onto the clone grid
     cloneAtt = utils.getCloneAttributes()
+    cellsize = cloneAtt["cellsize"]
     xmin = cloneAtt["xUL"]
-    ymin = cloneAtt["yUL"] - cloneAtt["rows"] * cloneAtt["cellsize"]
-    xmax = cloneAtt["xUL"] + cloneAtt["cols"] * cloneAtt["cellsize"]
     ymax = cloneAtt["yUL"]
-    xres = cloneAtt["cellsize"]
-    yres = cloneAtt["cellsize"]
-    te = f"-te {xmin} {ymin} {xmax} {ymax} "
-    tr = f"-tr {xres} {yres} "
-    co = (
-        "gdalwarp "
-        + te
-        + tr
-        + " -srcnodata -3.4028234663852886e+38 -dstnodata mv "
-        + str(tmpDir)
-        + "tmp_inp.tif "
-        + str(tmpDir)
-        + "tmp_out.tif"
+    xmax = xmin + cloneAtt["cols"] * cellsize
+    ymin = ymax - cloneAtt["rows"] * cellsize
+    if isInteger:
+        outputType, nodata, valueScale = gdal.GDT_Int32, -(2**31), pcr.Nominal
+    else:
+        outputType, nodata, valueScale = (
+            gdal.GDT_Float64,
+            -3.4028234663852886e38,
+            pcr.Scalar,
+        )
+    warped = gdal.Warp(
+        "",
+        str(input),
+        format="MEM",
+        outputBounds=(xmin, ymin, xmax, ymax),
+        xRes=cellsize,
+        yRes=cellsize,
+        outputType=outputType,
+        dstNodata=nodata,
     )
-    cOut, err = subprocess.Popen(
-        co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
-    ).communicate()
-    co = f"gdal_translate -of PCRaster {tmpDir}tmp_out.tif {output}"
-    cOut, err = subprocess.Popen(
-        co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
-    ).communicate()
-
-    co = f"rm {tmpDir}tmp*.*"
-    cOut, err = subprocess.Popen(
-        co, stdout=subprocess.PIPE, stderr=open(os.devnull), shell=True
-    ).communicate()
+    return pcr.numpy2pcr(valueScale, warped.ReadAsArray(), nodata)
 
 
 def set_clone(cloneMapFileName=None):

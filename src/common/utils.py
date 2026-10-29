@@ -620,13 +620,6 @@ def get_date_index(date, dates, date_selection_method, substituted_dates=False):
         )
 
 
-def get_julian_daynumber(date):
-
-    # integer julian day number of a date
-
-    return int((date - datetime.datetime(date.year, 1, 1)).days)
-
-
 def match_date_by_julian_number(date, dates, within_same_month=True):
     """
     Output:
@@ -655,7 +648,7 @@ module.
 
     message_str = ""
 
-    julian_day = get_julian_daynumber(date)
+    julian_day = get_julian_day_number(date)
     month = date.month
     year = date.year
 
@@ -667,7 +660,7 @@ module.
     years = np.zeros(dates.shape, dtype=int)
     ix = 0
     for sdate in dates:
-        julian_days[ix] = get_julian_daynumber(sdate)
+        julian_days[ix] = get_julian_day_number(sdate)
         months[ix] = sdate.month
         years[ix] = sdate.month
         ix = ix + 1
@@ -724,25 +717,16 @@ def get_julian_day_number(date):
 
         Input:
         ======
-        date:               date in datetime date or datetime format.
+        date:               date as datetime date, datetime or cftime datetime.
 
         Output:
         =======
-        julian_day:         integer number of julian day in the present year
+        julian_day:         integer number of days since 1 January of the
+                            present year (zero-based).
 
     """
-
-    if isinstance(date, datetime.date) or isinstance(date, datetime.datetime):
-        d = datetime.date(date.year, date.month, date.day)
-    else:
-        message_str = "ERROR: date needs to have datetime date or datetime format."
-        sys.exit(message_str)
-
-    d0 = datetime.date(d.year, 1, 1)
-    td = d - d0
-
-    julian_day = int(td.days)
-    return julian_day
+    # cftime dates from nc.num2date only subtract dates of their own calendar type
+    return int((date - type(date)(date.year, 1, 1)).days)
 
 
 def get_key(str_list):

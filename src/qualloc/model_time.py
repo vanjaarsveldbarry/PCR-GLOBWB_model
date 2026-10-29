@@ -67,7 +67,7 @@ class model_time(object):
         month = self.date.month
         day = self.date.day
 
-        self.julianday = utils.get_julian_daynumber(self.date)
+        self.julianday = utils.get_julian_day_number(self.date)
 
         # special markers
         self.report_flags["daily"] = True

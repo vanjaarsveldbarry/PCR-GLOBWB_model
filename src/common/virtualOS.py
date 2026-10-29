@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass
 
 import netCDF4 as nc
@@ -659,6 +660,68 @@ def readPCRmapClone(
         PCRmap = pcr.cover(PCRmap, cover)
 
     return PCRmap
+
+
+_valueScaleCast = {
+    pcr.Boolean: pcr.boolean,
+    pcr.Nominal: pcr.nominal,
+    pcr.Ordinal: pcr.ordinal,
+    pcr.Scalar: pcr.scalar,
+    pcr.Directional: pcr.directional,
+    pcr.Ldd: pcr.ldd,
+}
+
+
+def resolveInputPath(v, absolutePath=""):
+    # a path that exists relative to the working directory wins over absolutePath
+    if os.path.isfile(v):
+        return os.path.normpath(os.path.abspath(v))
+    return os.path.normpath(os.path.join(absolutePath, v))
+
+
+def readInputClone(
+    v,
+    varName="automatic",
+    absolutePath="",
+    dateInput=None,
+    select="exact",
+    yearSubstitution=False,
+    valueScale=pcr.Scalar,
+):
+    # v: netCDF or PCRaster file name, or a value; returns None if v is neither
+    fileName = resolveInputPath(str(v), absolutePath)
+
+    if os.path.isfile(fileName) and fileName.endswith(netcdf_suffixes):
+        if not _hasTimeAxis(fileName, varName):
+            return netcdf2PCRobjCloneWithoutTime(
+                fileName, varName, valueScale=valueScale
+            )
+        # yearSubstitution only applies when the exact date is missing; with
+        # before/after a date is always found
+        return netcdf2PCRobjClone(
+            fileName,
+            varName,
+            dateInput=dateInput,
+            valueScale=valueScale,
+            select=select.lower(),
+            yearSubstitution=bool(yearSubstitution) and select.lower() == "exact",
+        )
+
+    if os.path.isfile(fileName) and fileName.endswith((".map", ".tif")):
+        # readPCRmapClone empties and recreates tmpDir, so it gets one of its own
+        tmpDir = tempfile.mkdtemp(prefix="readInputClone_") + os.sep
+        try:
+            PCRmap = readPCRmapClone(fileName, tmpDir)
+        finally:
+            shutil.rmtree(tmpDir, ignore_errors=True)
+        logger.debug(f"{varName} read from {fileName}; PCRaster maps have no dates")
+        return _valueScaleCast[valueScale](PCRmap)
+
+    try:
+        return _valueScaleCast[valueScale](float(v))
+    except ValueError:
+        logger.error(f"{fileName}: not a netCDF/PCRaster file, cannot convert")
+        return None
 
 
 def isSameClone(attributeInput):

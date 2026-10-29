@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 
-from pcrglobwb.common import virtualOS as vos
+from common import virtualOS as vos
 
 logger = logging.getLogger(__name__)
 

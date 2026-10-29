@@ -5,19 +5,18 @@ from copy import deepcopy
 
 import pcraster as pcr
 
+from common import virtualOS as vos
 from qualloc.basic_functions import (
     pcr_return_val_div_zero,
     pcr_share_identical_maps,
     sum_list,
 )
-from qualloc.file_handler import close_nc_cache, read_file_entry
 from qualloc.groundwater import groundwater
 from qualloc.initial_conditions_handler import (
     get_initial_condition_as_timed_dict,
     get_initial_conditions,
 )
 from qualloc.qualloc_reporting import qualloc_report_initial_conditions
-from qualloc.spatialDataSet2PCR import cloneAttributes
 from qualloc.surfacewater import surfacewater
 from qualloc.water_management import (
     very_small_number,
@@ -131,8 +130,6 @@ class qualloc_model(object):
 
         self.model_time = model_time
 
-        self.model_configuration.clone_attributes = cloneAttributes()
-
         logger.info(
             str.join(
                 "\n",
@@ -162,20 +159,18 @@ class qualloc_model(object):
     def initialize(self):
 
         # stand-alone QUAlloc: read the land mask
-        self.landmask = read_file_entry(
-            filename=self.model_configuration.general["clone"],
-            variablename=self.model_configuration.general["landmask_ncvariable"],
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Boolean,
+        self.landmask = vos.readInputClone(
+            v=self.model_configuration.general["clone"],
+            varName=self.model_configuration.general["landmask_ncvariable"],
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Boolean,
         )
 
-        self.cellarea = read_file_entry(
-            filename=self.model_configuration.general["cellarea"],
-            variablename=self.model_configuration.general["cellarea_ncvariable"],
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+        self.cellarea = vos.readInputClone(
+            v=self.model_configuration.general["cellarea"],
+            varName=self.model_configuration.general["cellarea_ncvariable"],
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
 
         # initial conditions: files to exclude
@@ -248,48 +243,43 @@ class qualloc_model(object):
             "surfacewater_storage"
         ]
 
-        ldd = read_file_entry(
-            filename=self.model_configuration.surfacewater["ldd"],
-            variablename=ncvariable_name(self.model_configuration.surfacewater, "ldd"),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Ldd,
+        ldd = vos.readInputClone(
+            v=self.model_configuration.surfacewater["ldd"],
+            varName=ncvariable_name(self.model_configuration.surfacewater, "ldd"),
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Ldd,
         )
-        channel_gradient = read_file_entry(
-            filename=self.model_configuration.surfacewater["channel_gradient"],
-            variablename=ncvariable_name(
+        channel_gradient = vos.readInputClone(
+            v=self.model_configuration.surfacewater["channel_gradient"],
+            varName=ncvariable_name(
                 self.model_configuration.surfacewater, "channel_gradient"
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
-        channel_width = read_file_entry(
-            filename=self.model_configuration.surfacewater["channel_width"],
-            variablename=ncvariable_name(
+        channel_width = vos.readInputClone(
+            v=self.model_configuration.surfacewater["channel_width"],
+            varName=ncvariable_name(
                 self.model_configuration.surfacewater, "channel_width"
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
-        channel_length = read_file_entry(
-            filename=self.model_configuration.surfacewater["channel_length"],
-            variablename=ncvariable_name(
+        channel_length = vos.readInputClone(
+            v=self.model_configuration.surfacewater["channel_length"],
+            varName=ncvariable_name(
                 self.model_configuration.surfacewater, "channel_length"
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
-        mannings_n = read_file_entry(
-            filename=self.model_configuration.surfacewater["mannings_n"],
-            variablename=ncvariable_name(
+        mannings_n = vos.readInputClone(
+            v=self.model_configuration.surfacewater["mannings_n"],
+            varName=ncvariable_name(
                 self.model_configuration.surfacewater, "mannings_n"
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
 
         self.surfacewater = surfacewater(
@@ -336,40 +326,33 @@ class qualloc_model(object):
             )
 
         # allocation zones
-        groundwater_allocation_zones = read_file_entry(
-            filename=self.model_configuration.water_management[
-                "groundwater_allocation_zones"
-            ],
-            variablename=ncvariable_name(
+        groundwater_allocation_zones = vos.readInputClone(
+            v=self.model_configuration.water_management["groundwater_allocation_zones"],
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "groundwater_allocation_zones",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Nominal,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Nominal,
         )
-        surfacewater_allocation_zones = read_file_entry(
-            filename=self.model_configuration.water_management[
+        surfacewater_allocation_zones = vos.readInputClone(
+            v=self.model_configuration.water_management[
                 "surfacewater_allocation_zones"
             ],
-            variablename=ncvariable_name(
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "surfacewater_allocation_zones",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Nominal,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Nominal,
         )
-        desalwater_allocation_zones = read_file_entry(
-            filename=self.model_configuration.water_management[
-                "desalwater_allocation_zones"
-            ],
-            variablename=ncvariable_name(
+        desalwater_allocation_zones = vos.readInputClone(
+            v=self.model_configuration.water_management["desalwater_allocation_zones"],
+            varName=ncvariable_name(
                 self.model_configuration.water_management, "desalwater_allocation_zones"
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Nominal,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Nominal,
         )
         groundwater_allocation_zones = pcr.ifthen(
             self.landmask & (groundwater_allocation_zones != 0),
@@ -398,70 +381,63 @@ class qualloc_model(object):
         desalwater_allocation_zones = allocation_zones["desalwater"]
 
         # withdrawal points
-        groundwater_withdrawal_points = read_file_entry(
-            filename=self.model_configuration.water_management[
+        groundwater_withdrawal_points = vos.readInputClone(
+            v=self.model_configuration.water_management[
                 "groundwater_withdrawal_points"
             ],
-            variablename=ncvariable_name(
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "groundwater_withdrawal_points",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Ordinal,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Ordinal,
         )
-        surfacewater_withdrawal_points = read_file_entry(
-            filename=self.model_configuration.water_management[
+        surfacewater_withdrawal_points = vos.readInputClone(
+            v=self.model_configuration.water_management[
                 "surfacewater_withdrawal_points"
             ],
-            variablename=ncvariable_name(
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "surfacewater_withdrawal_points",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Ordinal,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Ordinal,
         )
-        desalwater_withdrawal_points = read_file_entry(
-            filename=self.model_configuration.water_management[
-                "desalwater_withdrawal_points"
-            ],
-            variablename=ncvariable_name(
+        desalwater_withdrawal_points = vos.readInputClone(
+            v=self.model_configuration.water_management["desalwater_withdrawal_points"],
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "desalwater_withdrawal_points",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Ordinal,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Ordinal,
         )
         groundwater_withdrawal_points = pcr.cover(groundwater_withdrawal_points, 0)
         surfacewater_withdrawal_points = pcr.cover(surfacewater_withdrawal_points, 0)
         desalwater_withdrawal_points = pcr.cover(desalwater_withdrawal_points, 0)
 
         # withdrawal capacity
-        groundwater_withdrawal_capacity = read_file_entry(
-            filename=self.model_configuration.water_management[
+        groundwater_withdrawal_capacity = vos.readInputClone(
+            v=self.model_configuration.water_management[
                 "groundwater_withdrawal_capacity"
             ],
-            variablename=ncvariable_name(
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "groundwater_withdrawal_capacity",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
-        surfacewater_withdrawal_capacity = read_file_entry(
-            filename=self.model_configuration.water_management[
+        surfacewater_withdrawal_capacity = vos.readInputClone(
+            v=self.model_configuration.water_management[
                 "surfacewater_withdrawal_capacity"
             ],
-            variablename=ncvariable_name(
+            varName=ncvariable_name(
                 self.model_configuration.water_management,
                 "surfacewater_withdrawal_capacity",
             ),
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
 
         # long-term values at time intervals identified by dates: a dictionary with dates as keys and
@@ -564,35 +540,28 @@ class qualloc_model(object):
             ]["surfacewater_longterm_potential_withdrawal"]
 
         # weights per water source
-        groundwater_update_weight = read_file_entry(
-            filename=self.model_configuration.water_management[
-                "groundwater_update_weight"
-            ],
-            variablename="groundwater_update_weight",
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+        groundwater_update_weight = vos.readInputClone(
+            v=self.model_configuration.water_management["groundwater_update_weight"],
+            varName="groundwater_update_weight",
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
-        surfacewater_update_weight = read_file_entry(
-            filename=self.model_configuration.water_management[
-                "surfacewater_update_weight"
-            ],
-            variablename="surfacewater_update_weight",
-            inputpath=self.model_configuration.general["inputpath"],
-            clone_attributes=self.model_configuration.clone_attributes,
-            datatype=pcr.Scalar,
+        surfacewater_update_weight = vos.readInputClone(
+            v=self.model_configuration.water_management["surfacewater_update_weight"],
+            varName="surfacewater_update_weight",
+            absolutePath=self.model_configuration.general["inputpath"],
+            valueScale=pcr.Scalar,
         )
 
         # weights per sector
         gross_demand_update_weight = {}
         for sector_name in sector_names:
             var = f"{sector_name}_update_weight"
-            gross_demand_update_weight[sector_name] = read_file_entry(
-                filename=self.model_configuration.water_management[var],
-                variablename=var,
-                inputpath=self.model_configuration.general["inputpath"],
-                clone_attributes=self.model_configuration.clone_attributes,
-                datatype=pcr.Scalar,
+            gross_demand_update_weight[sector_name] = vos.readInputClone(
+                v=self.model_configuration.water_management[var],
+                varName=var,
+                absolutePath=self.model_configuration.general["inputpath"],
+                valueScale=pcr.Scalar,
             )
 
         # prioritization: source names including desalinated water use
@@ -623,12 +592,11 @@ class qualloc_model(object):
 
                 if key in self.model_configuration.water_management.keys():
 
-                    values = read_file_entry(
-                        filename=self.model_configuration.water_management[key],
-                        variablename=self.model_configuration.water_management[key],
-                        inputpath=self.model_configuration.general["inputpath"],
-                        clone_attributes=self.model_configuration.clone_attributes,
-                        datatype=pcr.Scalar,
+                    values = vos.readInputClone(
+                        v=self.model_configuration.water_management[key],
+                        varName=self.model_configuration.water_management[key],
+                        absolutePath=self.model_configuration.general["inputpath"],
+                        valueScale=pcr.Scalar,
                     )
 
                     # fill and mask
@@ -799,12 +767,11 @@ class qualloc_model(object):
                 # the netCDF file and variable must have the same name
                 ncvariable = os.path.basename(limit).split(".")[0]
 
-                limit = read_file_entry(
-                    filename=limit,
-                    variablename=ncvariable,
-                    inputpath=self.model_configuration.general["inputpath"],
-                    clone_attributes=self.model_configuration.clone_attributes,
-                    datatype=pcr.Scalar,
+                limit = vos.readInputClone(
+                    v=limit,
+                    varName=ncvariable,
+                    absolutePath=self.model_configuration.general["inputpath"],
+                    valueScale=pcr.Scalar,
                 )
 
                 constituent_limits[sector_name][constituent_name] = limit
@@ -1014,17 +981,16 @@ class qualloc_model(object):
 
                     # stand-alone QUAlloc
                     if not online_coupling_to_quality:
-                        var_out = read_file_entry(
-                            filename=self.water_quality_forcing_info[key]["ncfilename"],
-                            variablename=self.water_quality_forcing_info[key][
-                                "ncvariable"
+                        var_out = vos.readInputClone(
+                            v=self.water_quality_forcing_info[key]["ncfilename"],
+                            varName=self.water_quality_forcing_info[key]["ncvariable"],
+                            absolutePath=self.water_quality_forcing_info[key][
+                                "inputpath"
                             ],
-                            inputpath=self.water_quality_forcing_info[key]["inputpath"],
-                            clone_attributes=self.model_configuration.clone_attributes,
-                            datatype=pcr.Scalar,
-                            date=date,
-                            date_selection_method="nearest",
-                            allow_year_substitution=False,
+                            valueScale=pcr.Scalar,
+                            dateInput=date,
+                            select="nearest",
+                            yearSubstitution=False,
                         )
                         logger.debug(
                             "information on %s %s short-term quality read for %s",
@@ -1078,15 +1044,14 @@ class qualloc_model(object):
         file_name = "desalinated_water_use"
         if self.model_flags[flag_name]:
 
-            var_out = read_file_entry(
-                filename=self.model_configuration.water_management[file_name],
-                variablename=file_name,
-                inputpath=self.model_configuration.general["inputpath"],
-                clone_attributes=self.model_configuration.clone_attributes,
-                datatype=pcr.Scalar,
-                date=date,
-                date_selection_method="exact",
-                allow_year_substitution=True,
+            var_out = vos.readInputClone(
+                v=self.model_configuration.water_management[file_name],
+                varName=file_name,
+                absolutePath=self.model_configuration.general["inputpath"],
+                valueScale=pcr.Scalar,
+                dateInput=date,
+                select="exact",
+                yearSubstitution=True,
             )
 
             # clip to the land mask
@@ -1114,17 +1079,14 @@ class qualloc_model(object):
                         ("region_ratios", pcr.Scalar),
                     ]:
 
-                        var_out = read_file_entry(
-                            filename=self.model_configuration.water_management[
-                                file_name
-                            ],
-                            variablename=var,
-                            inputpath=self.model_configuration.general["inputpath"],
-                            clone_attributes=self.model_configuration.clone_attributes,
-                            datatype=dtype,
-                            date=datetime.datetime(date.year, 1, 1),
-                            date_selection_method="exact",
-                            allow_year_substitution=True,
+                        var_out = vos.readInputClone(
+                            v=self.model_configuration.water_management[file_name],
+                            varName=var,
+                            absolutePath=self.model_configuration.general["inputpath"],
+                            valueScale=dtype,
+                            dateInput=datetime.datetime(date.year, 1, 1),
+                            select="exact",
+                            yearSubstitution=True,
                         )
 
                         # cover NaN with zero and clip to the land mask
@@ -1469,9 +1431,7 @@ class qualloc_model(object):
 
         logger.info("final time step: closing down all files")
 
-        # close the caches
         self.report_initial_conditions_to_file.close()
-        close_nc_cache()
 
         return None
 

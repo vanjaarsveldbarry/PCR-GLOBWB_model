@@ -3,8 +3,8 @@ import logging
 
 import pcraster as pcr
 
+from common import virtualOS as vos
 from pcrglobwb import variable_list as varDicts
-from pcrglobwb.common import virtualOS as vos
 from pcrglobwb.ncConverter import PCR2netCDF
 
 logger = logging.getLogger(__name__)

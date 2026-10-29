@@ -2,14 +2,14 @@
 # TODO: make sure non-included components are not updated and initial settings remain consistent
 
 import logging
+import os
 import sys
 from copy import deepcopy
 
 import pcraster as pcr
 
-from qualloc.file_handler import compose_filename, file_is_nc, read_file_entry
+from common import virtualOS as vos
 from qualloc.model_time import match_date_by_julian_number
-from qualloc.netCDF_recipes import get_nc_dates
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +25,12 @@ def test_timed_netcdf(filename, path="", time_interval_days=365):
     timed_netcdf = False
     nc_dates = []
 
-    filename, file_exists = compose_filename(filename, path)
+    filename = vos.resolveInputPath(filename, path)
 
-    if file_is_nc(filename) and file_exists:
+    if filename.endswith(vos.netcdf_suffixes) and os.path.isfile(filename):
 
         # netCDF file: get the dates
-        nc_dates = get_nc_dates(filename)
+        nc_dates = vos.getNcDates(filename)
 
         # decide on the content
         for ix in range(1, len(nc_dates)):
@@ -128,14 +128,13 @@ appropriate key and value pairs.
                             initial_conditions[section_name][variablename] = {}
 
                             for nc_date in nc_dates:
-                                value = read_file_entry(
-                                    filename=entry,
-                                    variablename=variablename,
-                                    inputpath=model_configuration.inputpath,
-                                    clone_attributes=model_configuration.clone_attributes,
-                                    date=nc_date,
-                                    date_selection_method="exact",
-                                    allow_year_substitution=True,
+                                value = vos.readInputClone(
+                                    v=entry,
+                                    varName=variablename,
+                                    absolutePath=model_configuration.inputpath,
+                                    dateInput=nc_date,
+                                    select="exact",
+                                    yearSubstitution=True,
                                 )
 
                                 initial_conditions[section_name][variablename][
@@ -152,14 +151,13 @@ appropriate key and value pairs.
                             else:
                                 nc_date = date
 
-                            value = read_file_entry(
-                                filename=entry,
-                                variablename=variablename,
-                                inputpath=model_configuration.inputpath,
-                                clone_attributes=model_configuration.clone_attributes,
-                                date=nc_date,
-                                date_selection_method=date_selection_method,
-                                allow_year_substitution=allow_year_substitution,
+                            value = vos.readInputClone(
+                                v=entry,
+                                varName=variablename,
+                                absolutePath=model_configuration.inputpath,
+                                dateInput=nc_date,
+                                select=date_selection_method,
+                                yearSubstitution=allow_year_substitution,
                             )
                             # add the value under the reduced key
                             initial_conditions[section_name][variablename] = value

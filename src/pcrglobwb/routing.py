@@ -6,8 +6,8 @@ from copy import deepcopy
 import numpy as np
 import pcraster as pcr
 
+from common import virtualOS as vos
 from pcrglobwb import waterBodies
-from pcrglobwb.common import virtualOS as vos
 from pcrglobwb.ncConverter import PCR2netCDF
 
 logger = logging.getLogger(__name__)

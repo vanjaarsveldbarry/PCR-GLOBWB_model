@@ -1,6 +1,6 @@
 import pcraster as pcr
 
-from pcrglobwb.common import virtualOS as vos
+from common import virtualOS as vos
 
 
 class SoilAndTopoParameters(object):

@@ -27,7 +27,7 @@ def test_timed_netcdf(filename, path="", time_interval_days=365):
 
     filename, file_exists = utils.compose_filename(filename, path)
 
-    if utils.file_is_nc(filename) and file_exists:
+    if utils.file_type(filename) == "netcdf" and file_exists:
 
         # netCDF file: get the dates
         nc_dates = get_nc_dates(filename)

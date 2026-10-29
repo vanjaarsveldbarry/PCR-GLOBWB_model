@@ -394,26 +394,15 @@ the file exists. Returns the resulting the filename.
     return filename, os.path.isfile(filename)
 
 
-def file_is_nc(filename):
+def file_type(filename):
     """
-    file_is_ncfile: tests if the file extension matches that of a netCDF file;
-    returns True if this is the case.
-    """
-
-    file_ext = os.path.splitext(filename)[1]
-
-    return file_extensions[file_ext] == "netcdf"
-
-
-def file_is_pcr(filename):
-    """
-    file_is_ncfile: tests if the file extension matches that of a netCDF file;
-    returns True if this is the case.
+    file_type: returns the file type of the file extension as listed in
+    file_extensions, e.g. "netcdf" or "pcraster".
     """
 
     file_ext = os.path.splitext(filename)[1]
 
-    return file_extensions[file_ext] == "pcraster"
+    return file_extensions[file_ext]
 
 
 def cloneAttributes():

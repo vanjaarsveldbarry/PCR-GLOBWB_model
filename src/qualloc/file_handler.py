@@ -123,7 +123,7 @@ given date. This may concern spatial information or single entries.
         filename, inputpath, file_subst_args
     )
 
-    if existing_file and utils.file_is_nc(filename):
+    if existing_file and utils.file_type(filename) == "netcdf":
 
         # netCDF: read from the cache
         var_out = nc_info.read_nc_field(
@@ -137,7 +137,7 @@ given date. This may concern spatial information or single entries.
             allow_year_substitution=allow_year_substitution,
         )
 
-    elif existing_file and utils.file_is_pcr(filename):
+    elif existing_file and utils.file_type(filename) == "pcraster":
 
         # PCRaster file
 

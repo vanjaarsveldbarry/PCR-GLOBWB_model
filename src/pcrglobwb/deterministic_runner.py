@@ -4,8 +4,8 @@ import sys
 
 from pcraster.framework import DynamicFramework, DynamicModel
 
-from pcrglobwb.common import disclaimer
-from pcrglobwb.common.currTimeStep import ModelTime
+from common import disclaimer
+from common.currTimeStep import ModelTime
 from pcrglobwb.configuration import Configuration
 from pcrglobwb.pcrglobwb import PCRGlobWB
 from pcrglobwb.reporting import Reporting

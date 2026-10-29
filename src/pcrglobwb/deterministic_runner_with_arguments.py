@@ -6,9 +6,9 @@ import sys
 import pcraster as pcr
 from pcraster.framework import DynamicFramework, DynamicModel
 
-from pcrglobwb.common import disclaimer
-from pcrglobwb.common import virtualOS as vos
-from pcrglobwb.common.currTimeStep import ModelTime
+from common import disclaimer
+from common import virtualOS as vos
+from common.currTimeStep import ModelTime
 from pcrglobwb.configuration import Configuration
 from pcrglobwb.pcrglobwb import PCRGlobWB
 from pcrglobwb.reporting import Reporting

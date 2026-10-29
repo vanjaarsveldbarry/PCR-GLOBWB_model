@@ -4,7 +4,7 @@ import math
 
 import pcraster as pcr
 
-from pcrglobwb.common import virtualOS as vos
+from common import virtualOS as vos
 from pcrglobwb.ncConverter import PCR2netCDF
 
 logger = logging.getLogger(__name__)

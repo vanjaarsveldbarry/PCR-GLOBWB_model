@@ -76,13 +76,15 @@ class Configuration(object):
 
         self.replacements = replacements
         with open(self.iniFileName) as ini_file:
-            self.iniContent = placeholder_pattern.sub(
-                lambda match: self.replacements.get(match[1], match[1]),
-                ini_file.read(),
-            )
+            ini_template = ini_file.read()
+
+        self.check_placeholders(ini_template)
+        self.iniContent = placeholder_pattern.sub(
+            lambda match: self.replacements.get(match[1], match[1]),
+            ini_template,
+        )
 
         self.parse_configuration_file(self.iniContent)
-        self.check_no_placeholders_left()
 
         # option to run in a sandbox with meteo files and initial conditions
         self.using_relative_path_for_output_directory = False
@@ -284,19 +286,32 @@ class Configuration(object):
                 val = config.get(sec, opt)
                 self.__getattribute__(sec)[opt] = val
 
-    def check_no_placeholders_left(self):
+    def check_placeholders(self, ini_template):
+        config = ConfigParser()
+        config.optionxform = str
+        config.read_string(ini_template)
+
         # parsed values, not the raw text, so commented-out ini lines don't count
-        left = {
+        in_ini = {
             token
-            for section in self.allSections
-            for value in getattr(self, section).values()
+            for section in config.sections()
+            for value in config[section].values()
             for token in placeholder_pattern.findall(value)
         }
-        if left:
-            needed = ", ".join(
-                f"{t} ({INI_PLACEHOLDER_FLAGS[t]})" for t in sorted(left)
-            )
-            sys.exit(f"{self.iniFileName} has placeholders without a value: {needed}")
+
+        problems = {
+            "placeholders without a value": in_ini - self.replacements.keys(),
+            "values for placeholders it does not contain": self.replacements.keys()
+            - in_ini,
+        }
+        messages = [
+            f"{problem}: "
+            + ", ".join(f"{t} ({INI_PLACEHOLDER_FLAGS[t]})" for t in sorted(tokens))
+            for problem, tokens in problems.items()
+            if tokens
+        ]
+        if messages:
+            sys.exit(f"{self.iniFileName} has {'; '.join(messages)}")
 
     def set_input_files(self):
         self.cloneMap = utils.getFullPath(

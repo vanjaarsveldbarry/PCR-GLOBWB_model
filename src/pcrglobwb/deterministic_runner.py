@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import sys
@@ -39,31 +40,27 @@ class DeterministicRunner(DynamicModel):
         self.reporting.report()
 
 
-def main():
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser(
+        description="Run PCR-GLOBWB from an ini file.", allow_abbrev=False
+    )
+    parser.add_argument("ini_file", help="PCR-GLOBWB ini configuration file")
+    parser.add_argument("--debug", action="store_true", help="log at DEBUG level")
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+
+    args = parse_arguments(argv)
 
     disclaimer.print_disclaimer()
 
-    iniFileName = os.path.abspath(sys.argv[1])
-
-    debug_mode = False
-    if len(sys.argv) > 2:
-        if sys.argv[2] == "debug":
-            debug_mode = True
-
-    # use the ini file as given
-    no_modification = True
-
-    # use the output directory given as a command-line argument
-    if len(sys.argv) > 3 and sys.argv[3] == "--output_dir":
-        no_modification = False
-        output_directory = sys.argv[4]
-
     configuration = Configuration(
-        iniFileName=iniFileName, debug_mode=debug_mode, no_modification=no_modification
+        iniFileName=os.path.abspath(args.ini_file),
+        replacements={},
+        debug_mode=args.debug,
     )
-    if not no_modification:
-        configuration.globalOptions["outputDir"] = output_directory
-        configuration.set_configuration()
+    configuration.set_configuration()
 
     # time step info: year, month, day, doy, etc.
     currTimeStep = ModelTime()

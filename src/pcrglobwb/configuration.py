@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import platform
+import re
 import shutil
 import sys
 from configparser import RawConfigParser as ConfigParser
@@ -13,15 +14,49 @@ from common import disclaimer, utils
 
 logger = logging.getLogger(__name__)
 
+# ini placeholder -> command-line flag that supplies its value
+INI_PLACEHOLDER_FLAGS = {
+    "MAIN_OUTPUT_DIR": "--mod",
+    "MAIN_INPUT_DIR": "--mid",
+    "START_DATE": "--sd",
+    "END_DATE": "--ed",
+    "MAIN_INITIAL_STATE_FOLDER": "--misd",
+    "DATE_FOR_INITIAL_STATES": "--dfis",
+    "CLONE_CONNECTIONS": "--clone_connections",
+    "PRECIPITATION_FORCING_FILE": "--pff",
+    "TEMPERATURE_FORCING_FILE": "--tff",
+    "REF_POT_ET_FORCING_FILE": "--rpetff",
+    "PRESSURE_FORCING_FILE": "--presff",
+    "WIND_FORCING_FILE": "--windff",
+    "SHORTWAVE_RADIATION_FORCING_FILE": "--swradff",
+    "RELATIVE_HUMIDITY_FORCING_FILE": "--relhumff",
+    "BASEFLOW_EXP_INPUT": "--bfexp",
+    "NUMBER_OF_SPINUP_YEARS": "--num_of_sp_years",
+    "CLONEMAP": "--clonemap",
+    "USE_MAXIMUM_STOR_GROUNDWATER_FOSSIL_INI": "--use_max_fossil_gw_ini",
+    "ESTIMATE_STOR_GROUNDWATER_INI_FROM_RECHARGE": "--est_stor_gw_from_rch",
+    "DAILY_GROUNDWATER_RECHARGE_INI": "--day_gw_rch_ini",
+    "QUALLOC_CONFIG_FILE": "--qcf",
+    "MIN_SOIL_DEPTH_FRAC_MULTIPLIER": "--min_soil_depth_frac_mult",
+    "KSAT_LOG10_MULTIPLIER": "--ksat_log10_mult",
+    "RECESSION_COEFF_LOG10_MULTIPLIER": "--recession_coeff_log10_mult",
+    "STOR_CAP_MULTIPLIER": "--stor_cap_mult",
+    "DEGREE_DAY_FACTOR_MULTIPLIER": "--degree_day_factor_mult",
+    "REF_POT_ET_MULTIPLIER": "--ref_pot_et_mult",
+    "MANNINGS_N_MULTIPLIER": "--mannings_n_mult",
+    "STOR_GROUNDWATER_INI_FILE": "--stor_groundwater_ini_file",
+}
+
+placeholder_pattern = re.compile(rf"\b({'|'.join(INI_PLACEHOLDER_FLAGS)})\b")
+
 
 class Configuration(object):
 
     def __init__(
         self,
         iniFileName,
+        replacements,
         debug_mode=False,
-        no_modification=True,
-        system_arguments=None,
         relative_ini_meteo_paths=False,
     ):
         object.__init__(self)
@@ -39,7 +74,15 @@ class Configuration(object):
         # save the cwd; it may be changed later by some utility functions
         self._cwd = os.getcwd()
 
-        self.parse_configuration_file(self.iniFileName)
+        self.replacements = replacements
+        with open(self.iniFileName) as ini_file:
+            self.iniContent = placeholder_pattern.sub(
+                lambda match: self.replacements.get(match[1], match[1]),
+                ini_file.read(),
+            )
+
+        self.parse_configuration_file(self.iniContent)
+        self.check_no_placeholders_left()
 
         # option to run in a sandbox with meteo files and initial conditions
         self.using_relative_path_for_output_directory = False
@@ -49,10 +92,32 @@ class Configuration(object):
             self.using_relative_path_for_output_directory = True
             self.make_ini_meteo_paths_absolute()
 
-        # if no_modification, set the configuration directly (creates the output, tmp, etc.
-        # directories); otherwise set_configuration must be called separately
-        if no_modification:
-            self.set_configuration(system_arguments)
+    @classmethod
+    def from_arguments(cls, args, system_arguments=None):
+        replacements = {
+            token: getattr(args, token)
+            for token in INI_PLACEHOLDER_FLAGS
+            if getattr(args, token) is not None
+        }
+
+        configuration = cls(
+            iniFileName=args.ini_file,
+            replacements=replacements,
+            debug_mode=args.debug,
+        )
+
+        # a parallel run (e.g. 5 and 6 arcmin runs) gets a specific directory based on the clone code:
+        if args.parallel is not None:
+            options = configuration.globalOptions
+            options["outputDir"] += f"/M{args.parallel:02}"
+            options["cloneMap"] = options["cloneMap"] % args.parallel
+            # landmask for the model calculation
+            if options["landmask"] != "None":
+                options["landmask"] = options["landmask"] % args.parallel
+
+        configuration.set_configuration(system_arguments=system_arguments)
+
+        return configuration
 
     def set_configuration(self, system_arguments=None):
 
@@ -189,23 +254,26 @@ class Configuration(object):
             logger.info(
                 "The system arguments given to execute this run: %s", system_arguments
             )
+        for token, value in self.replacements.items():
+            logger.info("Ini placeholder %s is set to %s", token, value)
 
     def backup_configuration(self):
 
-        shutil.copy(
-            self.iniFileName,
+        backup_filename = (
             self.logFileDir
             + os.path.basename(self.iniFileName)
             + "_"
             + str(self._timestamp.isoformat()).replace(":", ".")
-            + ".ini",
+            + ".ini"
         )
+        with open(backup_filename, "w") as backup_file:
+            backup_file.write(self.iniContent)
 
-    def parse_configuration_file(self, modelFileName):
+    def parse_configuration_file(self, ini_content):
 
         config = ConfigParser()
         config.optionxform = str
-        config.read(modelFileName)
+        config.read_string(ini_content)
 
         self.allSections = config.sections()
 
@@ -215,6 +283,20 @@ class Configuration(object):
             for opt in options:
                 val = config.get(sec, opt)
                 self.__getattribute__(sec)[opt] = val
+
+    def check_no_placeholders_left(self):
+        # parsed values, not the raw text, so commented-out ini lines don't count
+        left = {
+            token
+            for section in self.allSections
+            for value in getattr(self, section).values()
+            for token in placeholder_pattern.findall(value)
+        }
+        if left:
+            needed = ", ".join(
+                f"{t} ({INI_PLACEHOLDER_FLAGS[t]})" for t in sorted(left)
+            )
+            sys.exit(f"{self.iniFileName} has placeholders without a value: {needed}")
 
     def set_input_files(self):
         self.cloneMap = utils.getFullPath(

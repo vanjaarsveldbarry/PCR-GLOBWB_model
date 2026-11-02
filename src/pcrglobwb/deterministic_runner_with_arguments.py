@@ -1,14 +1,14 @@
+import argparse
 import logging
-import os
 import sys
 
 import pcraster as pcr
 from pcraster.framework import DynamicFramework, DynamicModel
 
-from common import disclaimer, utils
+from common import disclaimer
 from common import virtualOS as vos
 from common.currTimeStep import ModelTime
-from pcrglobwb.configuration import Configuration
+from pcrglobwb.configuration import INI_PLACEHOLDER_FLAGS, Configuration
 from pcrglobwb.pcrglobwb import PCRGlobWB
 from pcrglobwb.reporting import Reporting
 from pcrglobwb.spinUp import SpinUp
@@ -23,7 +23,6 @@ class DeterministicRunner(DynamicModel):
         configuration,
         modelTime,
         initialState=None,
-        system_argument=None,
         spinUpRun=False,
     ):
         DynamicModel.__init__(self)
@@ -34,78 +33,49 @@ class DeterministicRunner(DynamicModel):
 
         # the model parameters may be modified
         self.parameter_adjusment = False
-        if ("-adjparm" in list(system_argument)) or (
-            "prefactorOptions" in configuration.allSections
-        ):
-            self.adusting_parameters(configuration, system_argument)
+        if "prefactorOptions" in configuration.allSections:
+            self.adusting_parameters(configuration)
             self.parameter_adjusment = True
 
         self.configuration = configuration
 
-    def adusting_parameters(self, configuration, system_argument):
+    def adusting_parameters(self, configuration):
 
-        # global pre-multipliers given as arguments
-        if "-adjparm" in list(system_argument):
+        logger.info("Adjusting model parameters from the ini file")
 
-            # start index of the adjustment arguments
-            sai = system_argument.index("-adjparm")
+        # linear; note: does not work for the changing WMIN or Joyce land cover options
+        self.multiplier_for_refPotET = float(
+            configuration.prefactorOptions["linear_multiplier_for_refPotET"]
+        )
+        # linear
+        multiplier_for_degreeDayFactor = float(
+            configuration.prefactorOptions["linear_multiplier_for_degreeDayFactor"]
+        )
+        # linear
+        multiplier_for_minSoilDepthFrac = float(
+            configuration.prefactorOptions["linear_multiplier_for_minSoilDepthFrac"]
+        )
+        # log
+        multiplier_for_kSat = float(
+            configuration.prefactorOptions["log_10_multiplier_for_kSat"]
+        )
+        # linear
+        multiplier_for_storCap = float(
+            configuration.prefactorOptions["linear_multiplier_for_storCap"]
+        )
+        # log
+        multiplier_for_recessionCoeff = float(
+            configuration.prefactorOptions["log_10_multiplier_for_recessionCoeff"]
+        )
+        # linear
+        multiplier_for_manningsN = float(
+            configuration.prefactorOptions["multiplier_for_manningsN"]
+        )
 
-            logger.info("Adjusting model parameters from the system arguments")
-
-            # pre-multipliers for minSoilDepthFrac (linear), kSat (log), recessionCoeff (log), storCap
-            # (linear) and degreeDayFactor (linear)
-            multiplier_for_minSoilDepthFrac = float(system_argument[sai + 1])
-            multiplier_for_kSat = float(system_argument[sai + 2])
-            multiplier_for_recessionCoeff = float(system_argument[sai + 3])
-            multiplier_for_storCap = float(system_argument[sai + 4])
-            multiplier_for_degreeDayFactor = float(system_argument[sai + 5])
-
-            # pre-multiplier for the reference potential ET (linear)
-            self.multiplier_for_refPotET = float(system_argument[sai + 6])
-
-            # pre-multiplier for manningsN (linear)
-            multiplier_for_manningsN = float(system_argument[sai + 7])
-
-            storGroundwaterIni_file = str(system_argument[sai + 8])
-
-        # pre-factors can also be defined in the ini file; these overwrite the pre-multipliers
-        if "prefactorOptions" in configuration.allSections:
-
-            logger.info("Adjusting model parameters from the ini file")
-
-            # linear; note: does not work for the changing WMIN or Joyce land cover options
-            self.multiplier_for_refPotET = float(
-                configuration.prefactorOptions["linear_multiplier_for_refPotET"]
-            )
-            # linear
-            multiplier_for_degreeDayFactor = float(
-                configuration.prefactorOptions["linear_multiplier_for_degreeDayFactor"]
-            )
-            # linear
-            multiplier_for_minSoilDepthFrac = float(
-                configuration.prefactorOptions["linear_multiplier_for_minSoilDepthFrac"]
-            )
-            # log
-            multiplier_for_kSat = float(
-                configuration.prefactorOptions["log_10_multiplier_for_kSat"]
-            )
-            # linear
-            multiplier_for_storCap = float(
-                configuration.prefactorOptions["linear_multiplier_for_storCap"]
-            )
-            # log
-            multiplier_for_recessionCoeff = float(
-                configuration.prefactorOptions["log_10_multiplier_for_recessionCoeff"]
-            )
-            # linear
-            multiplier_for_manningsN = float(
-                configuration.prefactorOptions["multiplier_for_manningsN"]
-            )
-
-            # file location (use the full path)
-            storGroundwaterIni_file = str(
-                configuration.prefactorOptions["storGroundwaterIni_file"]
-            )
+        # file location (use the full path)
+        storGroundwaterIni_file = str(
+            configuration.prefactorOptions["storGroundwaterIni_file"]
+        )
 
         # log the global pre-multipliers
         msg = (
@@ -489,56 +459,36 @@ class DeterministicRunner(DynamicModel):
         self.reporting.report()
 
 
-def main():
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser(
+        description="Run PCR-GLOBWB, filling the ini file's placeholders from options.",
+        allow_abbrev=False,
+    )
+    parser.add_argument("ini_file", help="PCR-GLOBWB ini configuration file")
+    parser.add_argument("--debug", action="store_true", help="log at DEBUG level")
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        metavar="CLONE_CODE",
+        help="run one clone of a parallel set, writing to the M<CLONE_CODE> subfolder",
+    )
+    for token, flag in INI_PLACEHOLDER_FLAGS.items():
+        parser.add_argument(
+            flag, dest=token, metavar="VALUE", help=f"value for {token} in the ini"
+        )
+
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv[1:]
+    args = parse_arguments(argv)
 
     disclaimer.print_disclaimer()
 
-    iniFileName = os.path.abspath(sys.argv[1])
-
-    # modify the ini file and save it to a new location
-    if "-mod" in sys.argv:
-        iniFileName = utils.modify_ini_file(
-            original_ini_file=iniFileName, system_argument=sys.argv
-        )
-
-    debug_mode = False
-    if len(sys.argv) > 2:
-        if (
-            sys.argv[2] == "debug"
-            or sys.argv[2] == "debug_parallel"
-            or sys.argv[2] == "debug-parallel"
-        ):
-            debug_mode = True
-
-    this_run_is_part_of_a_set_of_parallel_run = False
-    if len(sys.argv) > 2:
-        if (
-            sys.argv[2] == "parallel"
-            or sys.argv[2] == "debug_parallel"
-            or sys.argv[2] == "debug-parallel"
-        ):
-            this_run_is_part_of_a_set_of_parallel_run = True
-
-    configuration = Configuration(
-        iniFileName=iniFileName, debug_mode=debug_mode, no_modification=False
-    )
-
-    # a parallel run (e.g. 5 and 6 arcmin runs) gets a specific directory based on the clone code:
-    if this_run_is_part_of_a_set_of_parallel_run:
-        # modify outputDir, clone map, landmask, etc. based on the command-line arguments
-        clone_code = str(sys.argv[3])
-        output_folder_with_clone_code = f"M{int(clone_code):02}"
-        configuration.globalOptions["outputDir"] += f"/{output_folder_with_clone_code}"
-        configuration.globalOptions["cloneMap"] = configuration.globalOptions[
-            "cloneMap"
-        ] % (int(clone_code))
-        # landmask for the model calculation
-        if configuration.globalOptions["landmask"] != "None":
-            configuration.globalOptions["landmask"] = configuration.globalOptions[
-                "landmask"
-            ] % (int(clone_code))
-
-    configuration.set_configuration(system_arguments=sys.argv)
+    configuration = Configuration.from_arguments(args, system_arguments=argv)
 
     # time step info: year, month, day, doy, etc.
     currTimeStep = ModelTime()
@@ -561,7 +511,7 @@ def main():
             )
             logger.info(f"Spin-Up Run No. {spinUpRun}")
             deterministic_runner = DeterministicRunner(
-                configuration, currTimeStep, initial_state, sys.argv, spinUpRun=True
+                configuration, currTimeStep, initial_state, spinUpRun=True
             )
 
             all_state_begin = deterministic_runner.model.getAllState()
@@ -592,7 +542,7 @@ def main():
 
     logger.info("Transient simulation run started.")
     deterministic_runner = DeterministicRunner(
-        configuration, currTimeStep, initial_state, sys.argv, spinUpRun=False
+        configuration, currTimeStep, initial_state, spinUpRun=False
     )
 
     dynamic_framework = DynamicFramework(

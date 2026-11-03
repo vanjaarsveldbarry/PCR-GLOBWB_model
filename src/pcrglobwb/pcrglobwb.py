@@ -346,17 +346,6 @@ class PCRGlobWB(object):
 
         return result
 
-    def getPseudoState(self):
-        result = {}
-
-        result["meteo"] = self.meteo.getPseudoState()
-
-        result["landSurface"] = self.landSurface.getPseudoState()
-        result["groundwater"] = self.groundwater.getPseudoState()
-        result["routing"] = self.routing.getPseudoState()
-
-        return result
-
     def getAllState(self):
         result = {}
 

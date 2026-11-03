@@ -61,11 +61,10 @@ class PCRGlobWB(object):
         )
         self.routing = routing.Routing(self._configuration, initialState, self.lddMap)
 
-    def dumpState(self, outputDirectory, specific_date_string=None):
+    def dumpState(self, outputDirectory):
         # write all states to disk to allow restarting
 
-        if specific_date_string is None:
-            specific_date_string = str(self._modelTime.fulldate)
+        specific_date_string = str(self._modelTime.fulldate)
 
         state = self.getState()
 

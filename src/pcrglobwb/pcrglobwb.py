@@ -50,10 +50,6 @@ class PCRGlobWB(object):
         # whether this run is a spin-up run
         self.spinUpRun = spinUpRun
 
-    @property
-    def configuration(self):
-        return self._configuration
-
     def createSubmodels(self, initialState):
 
         self.meteo = meteo.Meteo(self._configuration, self.landmask, initialState)

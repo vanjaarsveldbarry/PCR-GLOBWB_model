@@ -96,75 +96,6 @@ def readUpstreamDischarge(
     return outPCR
 
 
-def readDownscalingZarr(
-    ncFile,
-    dateInput=None,
-    useDoy=None,
-    LatitudeLongitude=True,
-    specificFillValue=None,
-):
-    f = zarr.convenience.open(ncFile)
-
-    keys = sorted(f.keys())
-
-    yRef = "lat"
-    xRef = "lon"
-    if LatitudeLongitude:
-        if "latitude" in keys:
-            yRef = "latitude"
-        if "longitude" in keys:
-            xRef = "longitude"
-
-    dims = ["time", xRef, yRef]
-    varName = [item for item in keys if item not in dims][0]
-
-    attributeClone = utils.getCloneAttributes()
-    cellsizeClone = attributeClone["cellsize"]
-    rowsClone = attributeClone["rows"]
-    colsClone = attributeClone["cols"]
-    xULClone = attributeClone["xUL"]
-    yULClone = attributeClone["yUL"]
-    # attributes of the input (netCDF)
-    cellsizeInput = f[yRef][0] - f[yRef][1]
-    cellsizeInput = float(cellsizeInput)
-
-    factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
-    diffX = np.abs(f[xRef][:] - (xULClone + 0.5 * cellsizeInput))
-    xIdxSta = np.argmin(diffX)
-    xIdxEnd = math.ceil(xIdxSta + colsClone / factor)
-    xslice = slice(xIdxSta, xIdxEnd)
-
-    diffY = np.abs(f[yRef][:] - (yULClone - 0.5 * cellsizeInput))
-    yIdxSta = np.argmin(diffY)
-    yIdxEnd = math.ceil(yIdxSta + rowsClone / factor)
-    yslice = slice(yIdxSta, yIdxEnd)
-
-    timeID = dateInput - 1
-
-    cropData = f[varName].get_basic_selection((timeID, xslice, yslice))[:]
-    cropData = np.nan_to_num(cropData).T
-
-    lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1.0)), np.nan)[0, :]
-    lat = pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1.0)), np.nan)[:, 0]
-    cropData = xr.DataArray(
-        cropData,
-        dims=["latitude", "longitude"],
-        coords=dict(longitude=lon, latitude=lat),
-    ).sortby("latitude", ascending=False)
-
-    cropData = cropData.values
-    # convert to a PCRaster object
-    if specificFillValue is not None:
-        outPCR = pcr.numpy2pcr(pcr.Scalar, cropData, float(specificFillValue))
-    else:
-        try:
-            outPCR = pcr.numpy2pcr(pcr.Scalar, cropData, float(f[varName].fill_value))
-        except Exception:
-            outPCR = pcr.numpy2pcr(pcr.Scalar, cropData, float(MV))
-
-    return outPCR
-
-
 def readDownscalingMeteo(
     ncFile,
     varName="automatic",
@@ -472,7 +403,7 @@ def readPCRmapClone(
     # v: input map file name or value; if the input map and the clone have different
     # grids, the map is resampled
     # varName, dateInput, useDoy, LatitudeLongitude and specificFillValue require
-    # netCDF input
+    # netCDF or zarr input
 
     def readNetcdf(ncFile, varName):
 
@@ -663,12 +594,6 @@ def readPCRmapClone(
             )
             logger.debug(f"Using the datetime {date_string}")
 
-        attributeClone = utils.getCloneAttributes()
-        cellsizeClone = attributeClone["cellsize"]
-        rowsClone = attributeClone["rows"]
-        colsClone = attributeClone["cols"]
-        xULClone = attributeClone["xUL"]
-        yULClone = attributeClone["yUL"]
         attributeInput = getNetcdfGridAttributes(f)
         cellsizeInput = attributeInput["cellsize"]
         sameClone = utils.isSameClone(attributeInput)
@@ -677,20 +602,9 @@ def readPCRmapClone(
         yslice = slice(None)
         xslice = slice(None)
         if not sameClone:
-
-            factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
-            if factor > 1:
-                logger.debug(f"Resampling cell size {cellsizeInput} to {cellsizeClone}")
-
-            diffX = np.abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput))
-            xIdxSta = np.argmin(diffX)
-            xIdxEnd = math.ceil(xIdxSta + colsClone / factor)
-            xslice = slice(xIdxSta, xIdxEnd)
-
-            diffY = np.abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput))
-            yIdxSta = np.argmin(diffY)
-            yIdxEnd = math.ceil(yIdxSta + rowsClone / factor)
-            yslice = slice(yIdxSta, yIdxEnd)
+            factor, xslice, yslice = getCloneCropSlices(
+                f.variables["lon"][:], f.variables["lat"][:], cellsizeInput
+            )
 
         # retrieve the data slice from the netCDF file
         if not hasTime:
@@ -739,6 +653,53 @@ def readPCRmapClone(
 
         return outPCR
 
+    def readZarr(zarrFile, varName):
+        if dateInput is None or useDoy != "Yes":
+            raise ValueError(f"{zarrFile} needs a 1-based dateInput and useDoy='Yes'")
+
+        if zarrFile in filecache:
+            f = filecache[zarrFile]
+        else:
+            f = zarr.convenience.open(zarrFile)
+            filecache[zarrFile] = f
+
+        keys = sorted(f.keys())
+
+        yRef = "lat"
+        xRef = "lon"
+        if LatitudeLongitude:
+            if "latitude" in keys:
+                yRef = "latitude"
+            if "longitude" in keys:
+                xRef = "longitude"
+
+        if varName == "automatic":
+            dims = ["time", xRef, yRef]
+            varName = [item for item in keys if item not in dims][0]
+        var = f[varName]
+
+        cellsizeInput = float(f[yRef][0] - f[yRef][1])
+        factor, xslice, yslice = getCloneCropSlices(
+            f[xRef][:], f[yRef][:], cellsizeInput
+        )
+
+        # stores are ordered (time, lon, lat); callers do arithmetic with the factors,
+        # so NaN must become 0 rather than a missing value
+        cropData = np.nan_to_num(var[int(dateInput) - 1, xslice, yslice]).T
+        # numpy2pcr reads the raw buffer, so a transposed view would scramble the map
+        cropData = cropData.copy(order="C")
+
+        if specificFillValue is not None:
+            fillValue = float(specificFillValue)
+        elif var.fill_value is not None:
+            fillValue = float(var.fill_value)
+        else:
+            fillValue = float(MV)
+
+        return pcr.numpy2pcr(
+            pcr.Scalar, regridData2FinerGrid(factor, cropData, fillValue), fillValue
+        )
+
     def readPCRaster(mapFile):
         sameClone = utils.isSameClone(getPCRasterGridAttributes(mapFile))
         if sameClone:
@@ -748,14 +709,21 @@ def readPCRmapClone(
     logger.debug(f"read file/value: {v}")
 
     this_is_a_netcdf_file = v.endswith(netcdf_suffixes)
-    if not this_is_a_netcdf_file and (
-        varName != "automatic"
-        or dateInput is not None
-        or useDoy is not None
-        or not LatitudeLongitude
-        or specificFillValue is not None
+    this_is_a_zarr_store = v.endswith(".zarr")
+    if (
+        not this_is_a_netcdf_file
+        and not this_is_a_zarr_store
+        and (
+            varName != "automatic"
+            or dateInput is not None
+            or useDoy is not None
+            or not LatitudeLongitude
+            or specificFillValue is not None
+        )
     ):
-        raise ValueError(f"{v} is not a netCDF file but netCDF options were given")
+        raise ValueError(
+            f"{v} is not a netCDF or zarr file but netCDF/zarr options were given"
+        )
 
     if v == "None":
 
@@ -770,6 +738,12 @@ def readPCRmapClone(
             logger.debug(f"read netcdf file: {v}")
 
             PCRmap = readNetcdf(v, varName)
+
+        elif this_is_a_zarr_store:
+
+            logger.debug(f"read zarr store: {v}")
+
+            PCRmap = readZarr(v, varName)
 
         else:
 
@@ -793,6 +767,25 @@ def readPCRmapClone(
         PCRmap = pcr.cover(PCRmap, cover)
 
     return PCRmap
+
+
+def getCloneCropSlices(lon, lat, cellsizeInput):
+    attributeClone = utils.getCloneAttributes()
+    cellsizeClone = attributeClone["cellsize"]
+
+    factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
+    if factor > 1:
+        logger.debug(f"Resampling cell size {cellsizeInput} to {cellsizeClone}")
+
+    diffX = np.abs(lon - (attributeClone["xUL"] + 0.5 * cellsizeInput))
+    xIdxSta = np.argmin(diffX)
+    xIdxEnd = math.ceil(xIdxSta + attributeClone["cols"] / factor)
+
+    diffY = np.abs(lat - (attributeClone["yUL"] - 0.5 * cellsizeInput))
+    yIdxSta = np.argmin(diffY)
+    yIdxEnd = math.ceil(yIdxSta + attributeClone["rows"] / factor)
+
+    return factor, slice(xIdxSta, xIdxEnd), slice(yIdxSta, yIdxEnd)
 
 
 def getNetcdfGridAttributes(f):

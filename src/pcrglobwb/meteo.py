@@ -977,14 +977,14 @@ class Meteo(object):
             doyStep = currTimeStep.doy
             if calendar.isleap(currTimeStep.year) and doyStep > 59:
                 doyStep = doyStep - 1
-            factor = vos.readDownscalingZarr(
+            factor = vos.readPCRmapClone(
                 self.precip_downscaling_factor_file,
-                doyStep,
+                dateInput=doyStep,
                 useDoy="Yes",
             )
-            drizzle_limit = vos.readDownscalingZarr(
+            drizzle_limit = vos.readPCRmapClone(
                 self.precip_drydays_file,
-                currTimeStep.month,
+                dateInput=currTimeStep.month,
                 useDoy="Yes",
             )
 
@@ -1058,9 +1058,9 @@ class Meteo(object):
             doyStep = currTimeStep.doy
             if calendar.isleap(currTimeStep.year) and doyStep > 59:
                 doyStep = doyStep - 1
-            factor = vos.readDownscalingZarr(
+            factor = vos.readPCRmapClone(
                 self.temp_downscaling_factor_file,
-                doyStep,
+                dateInput=doyStep,
                 useDoy="Yes",
             )
             self.temperature = self.temperature + factor
@@ -1156,9 +1156,9 @@ class Meteo(object):
             doyStep = currTimeStep.doy
             if calendar.isleap(currTimeStep.year) and doyStep > 59:
                 doyStep = doyStep - 1
-            factor = vos.readDownscalingZarr(
+            factor = vos.readPCRmapClone(
                 self.evap_downscaling_factor_file,
-                doyStep,
+                dateInput=doyStep,
                 useDoy="Yes",
             )
             self.referencePotET = self.referencePotET * factor

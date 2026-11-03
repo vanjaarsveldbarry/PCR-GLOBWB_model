@@ -42,6 +42,7 @@ def getFullPath(inputPath, absolutePath, completeFileName=True):
         ".nc4",
         ".map",
         ".nc",
+        ".zarr",
         ".dat",
         ".txt",
         ".asc",

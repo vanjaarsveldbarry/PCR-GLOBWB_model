@@ -28,11 +28,9 @@ class LivestockWaterDemand(object):
             logger.info("Livestock water demand is NOT included in the calculation.")
 
         if self.livestockWaterDemandOption:
-            self.livestockWaterDemandFile = utils.getFullPath(
-                inputPath=iniItems.waterDemandOptions["livestockWaterDemandFile"],
-                absolutePath=self.inputDir,
-                completeFileName=False,
-            )
+            self.livestockWaterDemandFile = iniItems.waterDemandOptions[
+                "livestockWaterDemandFile"
+            ]
 
     def update(self, currTimeStep, read_file=True):
 
@@ -55,6 +53,7 @@ class LivestockWaterDemand(object):
                                 varName="livestockGrossDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",
+                                absolutePath=self.inputDir,
                             ),
                             0.0,
                         ),
@@ -68,6 +67,7 @@ class LivestockWaterDemand(object):
                                 varName="livestockNettoDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",
+                                absolutePath=self.inputDir,
                             ),
                             0.0,
                         ),
@@ -88,6 +88,7 @@ class LivestockWaterDemand(object):
                         pcr.cover(
                             vos.readPCRmapClone(
                                 v=grossFileName,
+                                absolutePath=self.inputDir,
                             ),
                             0.0,
                         ),
@@ -105,6 +106,7 @@ class LivestockWaterDemand(object):
                         pcr.cover(
                             vos.readPCRmapClone(
                                 v=nettoFileName,
+                                absolutePath=self.inputDir,
                             ),
                             0.0,
                         ),

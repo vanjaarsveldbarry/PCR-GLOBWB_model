@@ -28,11 +28,9 @@ class ManufactureWaterDemand(object):
             logger.info("Manufacture water demand is NOT included in the calculation.")
 
         if self.manufactureWaterDemandOption:
-            self.manufactureWaterDemandFile = utils.getFullPath(
-                inputPath=iniItems.waterDemandOptions["manufactureWaterDemandFile"],
-                absolutePath=self.inputDir,
-                completeFileName=False,
-            )
+            self.manufactureWaterDemandFile = iniItems.waterDemandOptions[
+                "manufactureWaterDemandFile"
+            ]
 
     def update(self, currTimeStep, read_file=True):
 
@@ -53,6 +51,7 @@ class ManufactureWaterDemand(object):
                             varName="manufactureGrossDemand",
                             dateInput=currTimeStep.fulldate,
                             useDoy="monthly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     ),
@@ -66,6 +65,7 @@ class ManufactureWaterDemand(object):
                             varName="manufactureNettoDemand",
                             dateInput=currTimeStep.fulldate,
                             useDoy="monthly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     ),

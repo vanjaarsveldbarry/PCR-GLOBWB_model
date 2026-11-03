@@ -106,11 +106,9 @@ class Groundwater(object):
                     "Limit for annual regional groundwater abstraction is used."
                 )
                 self.limitRegionalAnnualGroundwaterAbstraction = True
-                self.pumpingCapacityNC = utils.getFullPath(
-                    iniItems.waterManagementOptions["pumpingCapacityNC"],
-                    self.inputDir,
-                    False,
-                )
+                self.pumpingCapacityNC = iniItems.waterManagementOptions[
+                    "pumpingCapacityNC"
+                ]
             else:
                 logger.warning(
                     "NO LIMIT for regional groundwater (annual) pumping. It may result too high groundwater abstraction."
@@ -118,14 +116,7 @@ class Groundwater(object):
                 self.limitRegionalAnnualGroundwaterAbstraction = False
 
         # netCDF file with the groundwater properties
-        if iniItems.groundwaterOptions["groundwaterPropertiesNC"] != "None":
-            groundwaterPropertiesNC = utils.getFullPath(
-                iniItems.groundwaterOptions["groundwaterPropertiesNC"], self.inputDir
-            )
-        else:
-            groundwaterPropertiesNC = iniItems.groundwaterOptions[
-                "groundwaterPropertiesNC"
-            ]
+        groundwaterPropertiesNC = iniItems.groundwaterOptions["groundwaterPropertiesNC"]
 
         # aquifer specific yield (-)
         if iniItems.groundwaterOptions[
@@ -137,7 +128,7 @@ class Groundwater(object):
             )
         else:
             self.specificYield = vos.netcdf2PCRobjCloneWithoutTime(
-                groundwaterPropertiesNC, "specificYield"
+                groundwaterPropertiesNC, "specificYield", absolutePath=self.inputDir
             )
         self.specificYield = pcr.cover(self.specificYield, 0.0)
         # TODO: set the minimum values of specific yield
@@ -154,7 +145,7 @@ class Groundwater(object):
             )
         else:
             self.kSatAquifer = vos.netcdf2PCRobjCloneWithoutTime(
-                groundwaterPropertiesNC, "kSatAquifer"
+                groundwaterPropertiesNC, "kSatAquifer", absolutePath=self.inputDir
             )
         self.kSatAquifer = pcr.cover(self.kSatAquifer, 0.0)
         self.kSatAquifer = pcr.max(0.010, self.kSatAquifer)
@@ -168,6 +159,7 @@ class Groundwater(object):
                 self.recessionCoeff = vos.netcdf2PCRobjCloneWithoutTime(
                     groundwaterPropertiesNC,
                     "recessionCoeff",
+                    absolutePath=self.inputDir,
                 )
         except Exception:
             self.recessionCoeff = None
@@ -196,11 +188,11 @@ class Groundwater(object):
                     self.inputDir,
                 )
             else:
-                topoPropertiesNC = utils.getFullPath(
-                    iniItems.landSurfaceOptions["topographyNC"], self.inputDir
-                )
+                topoPropertiesNC = iniItems.landSurfaceOptions["topographyNC"]
                 aquiferWidth = vos.netcdf2PCRobjCloneWithoutTime(
-                    topoPropertiesNC, "slopeLength"
+                    topoPropertiesNC,
+                    "slopeLength",
+                    absolutePath=self.inputDir,
                 )
             # fill missing aquiferWidth with its maximum value
             aquiferWidth = pcr.ifthen(

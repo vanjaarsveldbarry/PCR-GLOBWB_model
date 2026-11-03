@@ -292,9 +292,7 @@ class Routing(object):
         if iniItems.routingOptions["cropCoefficientWaterNC"] == "None":
             self.no_zero_crop_water_coefficient = False
         else:
-            self.fileCropKC = utils.getFullPath(
-                iniItems.routingOptions["cropCoefficientWaterNC"], self.inputDir
-            )
+            self.fileCropKC = iniItems.routingOptions["cropCoefficientWaterNC"]
 
         # Courant number criterion for numerical stability in the kinematic wave methods
         self.courantNumber = 0.50
@@ -431,9 +429,7 @@ class Routing(object):
         if "WWtPlantsNC" in list(iniItems.routingOptions.keys()):
             self.WWtPlants = True
             # wastewater pathways and removal efficiencies (treatment: tertiary, secondary, primary; collected but untreated; basic sanitation; open defecation; direct)
-            self.WWtPlantsNC = utils.getFullPath(
-                iniItems.routingOptions["WWtPlantsNC"], self.inputDir
-            )
+            self.WWtPlantsNC = iniItems.routingOptions["WWtPlantsNC"]
 
         if self.quality:
 
@@ -490,40 +486,24 @@ class Routing(object):
                 )
 
             # paths to additional meteorological variables
-            self.cloudFileNC = utils.getFullPath(
-                iniItems.meteoOptions["cloudcoverNC"], self.inputDir
-            )
-            self.radFileNC = utils.getFullPath(
-                iniItems.meteoOptions["radiationNC"], self.inputDir
-            )
-            self.vapFileNC = utils.getFullPath(
-                iniItems.meteoOptions["vaporNC"], self.inputDir
-            )
-            self.annualTFileNC = utils.getFullPath(
-                iniItems.meteoOptions["annualAvgTNC"], self.inputDir
-            )
+            self.cloudFileNC = iniItems.meteoOptions["cloudcoverNC"]
+            self.radFileNC = iniItems.meteoOptions["radiationNC"]
+            self.vapFileNC = iniItems.meteoOptions["vaporNC"]
+            self.annualTFileNC = iniItems.meteoOptions["annualAvgTNC"]
 
             # paths to power plant data
-            self.TlmaxNC = utils.getFullPath(
-                iniItems.routingOptions["TlmaxNC"], self.inputDir
-            )
-            self.powerplants_fwNC = utils.getFullPath(
-                iniItems.routingOptions["powerplants_fwNC"], self.inputDir
-            )
-            self.powerplants_fwfixedNC = utils.getFullPath(
-                iniItems.routingOptions["powerplants_fwfixedNC"], self.inputDir
-            )
-            self.powerplants_swNC = utils.getFullPath(
-                iniItems.routingOptions["powerplants_swNC"], self.inputDir
-            )
+            self.TlmaxNC = iniItems.routingOptions["TlmaxNC"]
+            self.powerplants_fwNC = iniItems.routingOptions["powerplants_fwNC"]
+            self.powerplants_fwfixedNC = iniItems.routingOptions[
+                "powerplants_fwfixedNC"
+            ]
+            self.powerplants_swNC = iniItems.routingOptions["powerplants_swNC"]
 
             # salinity: background TDS concentration (mg/L)
-            self.backgroundSalinityNC = utils.getFullPath(
-                iniItems.routingOptions["backgroundSalinity"], self.inputDir
-            )
+            self.backgroundSalinityNC = iniItems.routingOptions["backgroundSalinity"]
             # (mg/L)
             self.backgroundSalinity = vos.netcdf2PCRobjCloneWithoutTime(
-                self.backgroundSalinityNC, "bgTDS"
+                self.backgroundSalinityNC, "bgTDS", absolutePath=self.inputDir
             )
 
             # organic pollution: first-order degradation coefficient at 20 degC (van Vliet et al., 2021)
@@ -532,9 +512,7 @@ class Routing(object):
             self.watertempcorrection_BOD = pcr.scalar(1.047)
 
             # dissolved oxygen: elevation data
-            self.elevation_path = utils.getFullPath(
-                iniItems.landSurfaceOptions["topographyNC"], self.inputDir
-            )
+            self.elevation_path = iniItems.landSurfaceOptions["topographyNC"]
             self.elevation = vos.netcdf2PCRobjCloneWithoutTime(
                 self.elevation_path,
                 "dem_average",
@@ -617,157 +595,135 @@ class Routing(object):
 
                 # pollutant loading input data: domestic, gridded annual population at 5 arcmin (Lange & Geiger, 2020)
 
-                self.PopulationNC = utils.getFullPath(
-                    iniItems.routingOptions["PopulationNC"], self.inputDir
-                )
+                self.PopulationNC = iniItems.routingOptions["PopulationNC"]
                 # average (regional) excretion rates
-                self.Dom_ExcrLoadNC = utils.getFullPath(
-                    iniItems.routingOptions["Dom_ExcrLoadNC"], self.inputDir
-                )
+                self.Dom_ExcrLoadNC = iniItems.routingOptions["Dom_ExcrLoadNC"]
                 # (g/capita/day)
                 self.DomTDS_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Dom_ExcrLoadNC, "Dom_Fixed_TDSload"
+                    self.Dom_ExcrLoadNC, "Dom_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (g/capita/day)
                 self.DomBOD_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Dom_ExcrLoadNC, "Dom_Fixed_BODload"
+                    self.Dom_ExcrLoadNC, "Dom_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/capita/day)
                 self.DomFC_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Dom_ExcrLoadNC, "Dom_Fixed_FCload"
+                    self.Dom_ExcrLoadNC, "Dom_Fixed_FCload", absolutePath=self.inputDir
                 )
 
                 # manufacturing: average (regional) effluent concentrations
-                self.Man_EfflConcNC = utils.getFullPath(
-                    iniItems.routingOptions["Man_EfflConcNC"], self.inputDir
-                )
+                self.Man_EfflConcNC = iniItems.routingOptions["Man_EfflConcNC"]
                 # (mg/L, i.e. g/m3)
                 self.ManTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Man_EfflConcNC, "Man_Fixed_TDSload"
+                    self.Man_EfflConcNC, "Man_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
                 self.ManBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Man_EfflConcNC, "Man_Fixed_BODload"
+                    self.Man_EfflConcNC, "Man_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/100mL)
                 self.ManFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Man_EfflConcNC, "Man_Fixed_FCload"
+                    self.Man_EfflConcNC, "Man_Fixed_FCload", absolutePath=self.inputDir
                 )
 
                 # urban surface runoff: urban fraction, from 0 (no urban) to 1 (all urban)
-                self.UrbanFractionNC = utils.getFullPath(
-                    iniItems.routingOptions["UrbanFractionNC"], self.inputDir
-                )
+                self.UrbanFractionNC = iniItems.routingOptions["UrbanFractionNC"]
                 # average (regional) effluent concentrations
-                self.USR_EfflConcNC = utils.getFullPath(
-                    iniItems.routingOptions["USR_EfflConcNC"], self.inputDir
-                )
+                self.USR_EfflConcNC = iniItems.routingOptions["USR_EfflConcNC"]
                 # (mg/L, i.e. g/m3)
                 self.USRTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.USR_EfflConcNC, "USR_Fixed_TDSload"
+                    self.USR_EfflConcNC, "USR_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
                 self.USRBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.USR_EfflConcNC, "USR_Fixed_BODload"
+                    self.USR_EfflConcNC, "USR_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/100mL)
                 self.USRFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.USR_EfflConcNC, "USR_Fixed_FCload"
+                    self.USR_EfflConcNC, "USR_Fixed_FCload", absolutePath=self.inputDir
                 )
 
                 # livestock: gridded populations, 2010, 5 arcmin (Gilbert et al., 2018)
-                self.LivPopulationNC = utils.getFullPath(
-                    iniItems.routingOptions["LivPopulationNC"], self.inputDir
-                )
+                self.LivPopulationNC = iniItems.routingOptions["LivPopulationNC"]
                 # average (regional) excretion rates
-                self.Liv_ExcrLoadNC = utils.getFullPath(
-                    iniItems.routingOptions["Liv_ExcrLoadNC"], self.inputDir
-                )
+                self.Liv_ExcrLoadNC = iniItems.routingOptions["Liv_ExcrLoadNC"]
                 # (g/stock/day)
                 self.Bufallo_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "bufallo_BODload"
+                    self.Liv_ExcrLoadNC, "bufallo_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Chicken_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "chicken_BODload"
+                    self.Liv_ExcrLoadNC, "chicken_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Cow_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "cow_BODload"
+                    self.Liv_ExcrLoadNC, "cow_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Duck_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "duck_BODload"
+                    self.Liv_ExcrLoadNC, "duck_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Goat_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "goat_BODload"
+                    self.Liv_ExcrLoadNC, "goat_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Horse_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "horse_BODload"
+                    self.Liv_ExcrLoadNC, "horse_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Pig_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "pig_BODload"
+                    self.Liv_ExcrLoadNC, "pig_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
                 self.Sheep_BODload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "sheep_BODload"
+                    self.Liv_ExcrLoadNC, "sheep_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Bufallo_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "bufallo_FCload"
+                    self.Liv_ExcrLoadNC, "bufallo_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Chicken_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "chicken_FCload"
+                    self.Liv_ExcrLoadNC, "chicken_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Cow_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "cow_FCload"
+                    self.Liv_ExcrLoadNC, "cow_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Duck_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "duck_FCload"
+                    self.Liv_ExcrLoadNC, "duck_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Goat_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "goat_FCload"
+                    self.Liv_ExcrLoadNC, "goat_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Horse_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "horse_FCload"
+                    self.Liv_ExcrLoadNC, "horse_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Pig_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "pig_FCload"
+                    self.Liv_ExcrLoadNC, "pig_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
                 self.Sheep_FCload = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Liv_ExcrLoadNC, "sheep_FCload"
+                    self.Liv_ExcrLoadNC, "sheep_FCload", absolutePath=self.inputDir
                 )
 
                 # irrigation: soil concentration averaged over the topsoil and subsoil
-                self.Irr_EfflConcNC = utils.getFullPath(
-                    iniItems.routingOptions["Irr_EfflConcNC"], self.inputDir
-                )
+                self.Irr_EfflConcNC = iniItems.routingOptions["Irr_EfflConcNC"]
                 # (mg/L)
                 self.IrrTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
-                    self.Irr_EfflConcNC, "soil_TDS"
+                    self.Irr_EfflConcNC, "soil_TDS", absolutePath=self.inputDir
                 )
 
             else:
                 # paths to (non-natural) TDS, BOD and FC loading inputs
-                self.TDSloadNC = utils.getFullPath(
-                    iniItems.routingOptions["TDSloadNC"], self.inputDir
-                )
-                self.BODloadNC = utils.getFullPath(
-                    iniItems.routingOptions["BODloadNC"], self.inputDir
-                )
-                self.FCloadNC = utils.getFullPath(
-                    iniItems.routingOptions["FCloadNC"], self.inputDir
-                )
+                self.TDSloadNC = iniItems.routingOptions["TDSloadNC"]
+                self.BODloadNC = iniItems.routingOptions["BODloadNC"]
+                self.FCloadNC = iniItems.routingOptions["FCloadNC"]
 
         else:
             self.calculateLoads = False
@@ -1894,6 +1850,7 @@ class Routing(object):
                 "kc",
                 currTimeStep.fulldate,
                 useDoy="month",
+                absolutePath=self.inputDir,
             )
             self.waterKC = pcr.ifthen(self.landmask, pcr.cover(waterKC, 0.0))
             self.waterKC = pcr.max(self.minCropWaterKC, self.waterKC)
@@ -2015,6 +1972,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.WWt_plantID = pcr.nominal(self.WWt_plantID)
 
@@ -2026,6 +1984,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.WWt_zoneID = pcr.nominal(self.WWt_zoneID)
 
@@ -3261,6 +3220,7 @@ class Routing(object):
                 useDoy="monthly",
                 LatitudeLongitude=True,
                 specificFillValue=-999.0,
+                absolutePath=self.inputDir,
             ) / pcr.scalar(100)
 
             self.vaporPressure = vos.netcdf2PCRobjClone(
@@ -3270,6 +3230,7 @@ class Routing(object):
                 useDoy="monthly",
                 LatitudeLongitude=True,
                 specificFillValue=-999.0,
+                absolutePath=self.inputDir,
             )
 
             self.annualT = vos.netcdf2PCRobjClone(
@@ -3279,6 +3240,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=-999.0,
+                absolutePath=self.inputDir,
             ) + pcr.scalar(273.15)
 
         self.radiation = vos.netcdf2PCRobjClone(
@@ -3288,6 +3250,7 @@ class Routing(object):
             useDoy="daily",
             LatitudeLongitude=True,
             specificFillValue=-999.0,
+            absolutePath=self.inputDir,
         )
 
         # atmospheric emissivity (-) from vapour pressure:
@@ -3312,6 +3275,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
             # urban surface runoff: urban fraction (0-1)
@@ -3322,6 +3286,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             # zero urban fraction if missing (e.g. for lakes)
             self.urban_area_fraction = pcr.cover(self.urban_area_fraction, 0)
@@ -3334,6 +3299,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.BufalloPopulation = pcr.cover(self.BufalloPopulation, 0.0)
 
@@ -3345,6 +3311,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.ChickenPopulation = pcr.cover(self.ChickenPopulation, 0.0)
 
@@ -3356,6 +3323,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.CowPopulation = pcr.cover(self.CowPopulation, 0.0)
 
@@ -3367,6 +3335,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.DuckPopulation = pcr.cover(self.DuckPopulation, 0.0)
 
@@ -3378,6 +3347,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.GoatPopulation = pcr.cover(self.GoatPopulation, 0.0)
 
@@ -3389,6 +3359,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.HorsePopulation = pcr.cover(self.HorsePopulation, 0.0)
 
@@ -3400,6 +3371,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.PigPopulation = pcr.cover(self.PigPopulation, 0.0)
 
@@ -3411,6 +3383,7 @@ class Routing(object):
                 useDoy=None,
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
             self.SheepPopulation = pcr.cover(self.SheepPopulation, 0.0)
 
@@ -3435,6 +3408,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
             # country-level fraction of uncollected wastewater with basic sanitation
@@ -3445,6 +3419,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
             # country-level fraction of uncollected wastewater that is open defecation
@@ -3455,6 +3430,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
             # fraction of TDS removed at each wastewater treatment plant
@@ -3465,6 +3441,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
             # fraction of BOD removed at each wastewater treatment plant
@@ -3475,6 +3452,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
             # fraction of FC removed at each wastewater treatment plant
@@ -3485,6 +3463,7 @@ class Routing(object):
                 useDoy="yearly",
                 LatitudeLongitude=True,
                 specificFillValue=None,
+                absolutePath=self.inputDir,
             )
 
     def calculatePollutantLoadings(self, currTimeStep, landSurface, groundwater):
@@ -3998,6 +3977,7 @@ class Routing(object):
             str(currTimeStep.fulldate),
             useDoy=None,
             LatitudeLongitude=True,
+            absolutePath=self.inputDir,
         )
         self.TDSload = pcr.ifthen(self.landmask, self.TDSload)
 
@@ -4008,6 +3988,7 @@ class Routing(object):
             str(currTimeStep.fulldate),
             useDoy=None,
             LatitudeLongitude=True,
+            absolutePath=self.inputDir,
         )
         self.BODload = pcr.ifthen(self.landmask, self.BODload)
 
@@ -4018,6 +3999,7 @@ class Routing(object):
             str(currTimeStep.fulldate),
             useDoy=None,
             LatitudeLongitude=True,
+            absolutePath=self.inputDir,
         )
         self.FCload = pcr.ifthen(self.landmask, self.FCload)
 

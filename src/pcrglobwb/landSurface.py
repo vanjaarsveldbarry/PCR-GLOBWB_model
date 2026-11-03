@@ -641,11 +641,9 @@ class LandSurface(object):
             self.dynamicIrrigationArea = True
 
         if self.dynamicIrrigationArea:
-            self.dynamicIrrigationAreaFile = utils.getFullPath(
-                iniItems.landSurfaceOptions["historicalIrrigationArea"],
-                self.inputDir,
-                False,
-            )
+            self.dynamicIrrigationAreaFile = iniItems.landSurfaceOptions[
+                "historicalIrrigationArea"
+            ]
 
     def scaleNaturalLandCoverFractions(self):
         """rescales natural land cover fractions (make sure the total = 1)"""
@@ -830,6 +828,7 @@ class LandSurface(object):
                         "fracWaterInp",
                         currTimeStep.fulldate,
                         useDoy="yearly",
+                        absolutePath=self.inputDir,
                     )
                 else:
                     if routing.WaterBodies.fracWaterInp != "None":
@@ -848,6 +847,7 @@ class LandSurface(object):
                         "fracWaterInp",
                         currTimeStep.fulldate,
                         useDoy="yearly",
+                        absolutePath=self.inputDir,
                     )
                 else:
                     if routing.WaterBodies.fracWaterInp != "None":
@@ -1023,6 +1023,7 @@ class LandSurface(object):
                     "irrigationArea",
                     fulldateInString,
                     useDoy="yearly",
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -1035,7 +1036,7 @@ class LandSurface(object):
             )
             # (m2; the input file is in hectare)
             self.irrigationArea = 10000.0 * pcr.cover(
-                vos.readPCRmapClone(irrigation_pcraster_file),
+                vos.readPCRmapClone(irrigation_pcraster_file, self.inputDir),
                 0.0,
             )
 

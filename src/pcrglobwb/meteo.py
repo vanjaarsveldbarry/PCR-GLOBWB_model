@@ -460,22 +460,18 @@ class Meteo(object):
             self.anomalyDEM = highResolutionDEM - loweResolutionDEM
 
             # temperature lapse rate (netCDF) file
-            self.temperLapseRateNC = utils.getFullPath(
-                iniItems.meteoDownscalingOptions["temperLapseRateNC"], self.inputDir
-            )
+            self.temperLapseRateNC = iniItems.meteoDownscalingOptions[
+                "temperLapseRateNC"
+            ]
             # TODO: remove this criterion
-            self.temperatCorrelNC = utils.getFullPath(
-                iniItems.meteoDownscalingOptions["temperatCorrelNC"], self.inputDir
-            )
+            self.temperatCorrelNC = iniItems.meteoDownscalingOptions["temperatCorrelNC"]
 
             # precipitation lapse rate (netCDF) file
-            self.precipLapseRateNC = utils.getFullPath(
-                iniItems.meteoDownscalingOptions["precipLapseRateNC"], self.inputDir
-            )
+            self.precipLapseRateNC = iniItems.meteoDownscalingOptions[
+                "precipLapseRateNC"
+            ]
             # TODO: remove this criterion
-            self.precipitCorrelNC = utils.getFullPath(
-                iniItems.meteoDownscalingOptions["precipitCorrelNC"], self.inputDir
-            )
+            self.precipitCorrelNC = iniItems.meteoDownscalingOptions["precipitCorrelNC"]
 
         else:
             logger.info("No forcing downscaling is implemented.")
@@ -1005,6 +1001,7 @@ class Meteo(object):
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
                 LatitudeLongitude=True,
+                absolutePath=self.inputDir,
             )
             preSlope = pcr.cover(preSlope, 0.0)
             preSlope = pcr.max(0.0, preSlope)
@@ -1014,6 +1011,7 @@ class Meteo(object):
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
                 LatitudeLongitude=True,
+                absolutePath=self.inputDir,
             )
             preSlope = pcr.ifthenelse(
                 preCriteria > minCorrelationCriteria, preSlope, 0.0
@@ -1073,6 +1071,7 @@ class Meteo(object):
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
                 LatitudeLongitude=True,
+                absolutePath=self.inputDir,
             )
             # must be negative
             tmpSlope = pcr.min(0.0, tmpSlope)
@@ -1081,6 +1080,7 @@ class Meteo(object):
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
                 LatitudeLongitude=True,
+                absolutePath=self.inputDir,
             )
             tmpSlope = pcr.ifthenelse(
                 tmpCriteria < maxCorrelationCriteria, tmpSlope, 0.0
@@ -1116,6 +1116,7 @@ class Meteo(object):
             dateInput=currTimeStep.month,
             useDoy="Yes",
             LatitudeLongitude=True,
+            absolutePath=self.inputDir,
         )
         # must be negative
         tmpSlope = pcr.min(0.0, tmpSlope)
@@ -1124,6 +1125,7 @@ class Meteo(object):
             dateInput=currTimeStep.month,
             useDoy="Yes",
             LatitudeLongitude=True,
+            absolutePath=self.inputDir,
         )
         tmpSlope = pcr.ifthenelse(tmpCriteria < maxCorrelationCriteria, tmpSlope, 0.0)
         tmpSlope = pcr.cover(tmpSlope, 0.0)
@@ -1401,14 +1403,13 @@ class Meteo(object):
 
                 method_for_time_index = None
                 method_for_time_index = "daily"
-                netcdf_file_name = utils.getFullPath(
-                    self.iniItems.meteoOptions[meteo_var_name], self.inputDir
-                )
+                netcdf_file_name = self.iniItems.meteoOptions[meteo_var_name]
                 vars(self)[meteo_var_name] = vos.netcdf2PCRobjClone(
                     ncFile=netcdf_file_name,
                     varName="automatic",
                     dateInput=str(currTimeStep.fulldate),
                     useDoy=method_for_time_index,
+                    absolutePath=self.inputDir,
                 )
 
                 # apply the conversion factor and constant

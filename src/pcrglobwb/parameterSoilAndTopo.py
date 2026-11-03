@@ -1,6 +1,5 @@
 import pcraster as pcr
 
-from common import utils
 from common import virtualOS as vos
 
 
@@ -38,12 +37,10 @@ class SoilAndTopoParameters(object):
                 if var != "slopeLength":
                     vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
         else:
-            topoPropertiesNC = utils.getFullPath(
-                optionDict["topographyNC"], self.inputDir
-            )
+            topoPropertiesNC = optionDict["topographyNC"]
             for var in topoParams:
                 vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(
-                    topoPropertiesNC, var
+                    topoPropertiesNC, var, absolutePath=self.inputDir
                 )
                 if var != "slopeLength":
                     vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
@@ -78,7 +75,7 @@ class SoilAndTopoParameters(object):
             for i in range(0, len(dzRel)):
                 var = dzRel[i]
                 vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(
-                    topoPropertiesNC, var
+                    topoPropertiesNC, var, absolutePath=self.inputDir
                 )
                 vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
                 if i > 0:
@@ -130,12 +127,10 @@ class SoilAndTopoParameters(object):
                 vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
 
         else:
-            soilPropertiesNC = utils.getFullPath(
-                optionDict["soilPropertiesNC"], self.inputDir
-            )
+            soilPropertiesNC = optionDict["soilPropertiesNC"]
             for var in soilParameters:
                 vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(
-                    soilPropertiesNC, var
+                    soilPropertiesNC, var, absolutePath=self.inputDir
                 )
 
                 if var == "percolationImp":
@@ -228,13 +223,11 @@ class SoilAndTopoParameters(object):
                 vars(self)[temp] = pcr.cover(vars(self)[temp], 0.0)
 
         else:
-            soilPropertiesNC = utils.getFullPath(
-                optionDict["soilPropertiesNC"], self.inputDir
-            )
+            soilPropertiesNC = optionDict["soilPropertiesNC"]
             for var in soilStorages:
                 temp = f"{var}Inp"
                 vars(self)[temp] = vos.netcdf2PCRobjCloneWithoutTime(
-                    soilPropertiesNC, var
+                    soilPropertiesNC, var, absolutePath=self.inputDir
                 )
 
                 extrapolate = True

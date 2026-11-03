@@ -60,9 +60,7 @@ class WaterBodies(object):
             self.resSfAreaInp = iniItems.routingOptions["resSfAreaInp"]
         else:
             self.useNetCDF = True
-            self.ncFileInp = utils.getFullPath(
-                iniItems.routingOptions["waterBodyInputNC"], self.inputDir
-            )
+            self.ncFileInp = iniItems.routingOptions["waterBodyInputNC"]
 
         # minimum width (m) in the weir formula; TODO: base minWeirWidth on GLWD, GRanD and/or the bankfull discharge formula
         self.minWeirWidth = 10.0
@@ -112,6 +110,7 @@ class WaterBodies(object):
                 "fracWaterInp",
                 date_used,
                 useDoy="yearly",
+                absolutePath=self.inputDir,
             )
         else:
             if self.fracWaterInp != "None":
@@ -134,6 +133,7 @@ class WaterBodies(object):
                 "waterBodyIds",
                 date_used,
                 useDoy="yearly",
+                absolutePath=self.inputDir,
             )
         else:
             if self.waterBodyIdsInp != "None":
@@ -185,6 +185,7 @@ class WaterBodies(object):
                     "resSfAreaInp",
                     date_used,
                     useDoy="yearly",
+                    absolutePath=self.inputDir,
                 )
             )
         else:
@@ -227,6 +228,7 @@ class WaterBodies(object):
                 "waterBodyTyp",
                 date_used,
                 useDoy="yearly",
+                absolutePath=self.inputDir,
             )
         else:
             if self.waterBodyTypInp != "None":
@@ -275,6 +277,7 @@ class WaterBodies(object):
                     "resMaxCapInp",
                     date_used,
                     useDoy="yearly",
+                    absolutePath=self.inputDir,
                 )
             )
         else:

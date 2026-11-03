@@ -30,11 +30,9 @@ class ThermoelectricWaterDemand(object):
             )
 
         if self.thermoelectricWaterDemandOption:
-            self.thermoelectricWaterDemandFile = utils.getFullPath(
-                inputPath=iniItems.waterDemandOptions["thermoelectricWaterDemandFile"],
-                absolutePath=self.inputDir,
-                completeFileName=False,
-            )
+            self.thermoelectricWaterDemandFile = iniItems.waterDemandOptions[
+                "thermoelectricWaterDemandFile"
+            ]
 
     def update(self, currTimeStep, routing=None, read_file=True):
 
@@ -54,6 +52,7 @@ class ThermoelectricWaterDemand(object):
                             varName="thermoelectricGrossDemand",
                             dateInput=currTimeStep.fulldate,
                             useDoy="monthly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     ),
@@ -67,6 +66,7 @@ class ThermoelectricWaterDemand(object):
                             varName="thermoelectricNettoDemand",
                             dateInput=currTimeStep.fulldate,
                             useDoy="monthly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     ),
@@ -115,6 +115,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_ntotal = vos.netcdf2PCRobjClone(
@@ -124,6 +125,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_nelec = vos.netcdf2PCRobjClone(
@@ -133,6 +135,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_alpha = vos.netcdf2PCRobjClone(
@@ -142,6 +145,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_beta = vos.netcdf2PCRobjClone(
@@ -151,6 +155,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_omega = vos.netcdf2PCRobjClone(
@@ -160,6 +165,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_EZ = vos.netcdf2PCRobjClone(
@@ -169,6 +175,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_gamma = vos.netcdf2PCRobjClone(
@@ -178,6 +185,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_lambda = vos.netcdf2PCRobjClone(
@@ -187,6 +195,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fw_ratio = vos.netcdf2PCRobjClone(
@@ -196,6 +205,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
         self.powerplants_fw_ratio = pcr.cover(self.powerplants_fw_ratio, 0.0)
 
@@ -207,6 +217,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fwfixed_q = vos.netcdf2PCRobjClone(
@@ -216,6 +227,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_fwfixed_ratio = vos.netcdf2PCRobjClone(
@@ -225,6 +237,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
         self.powerplants_fwfixed_ratio = pcr.cover(self.powerplants_fwfixed_ratio, 0.0)
 
@@ -236,6 +249,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_sw_q = vos.netcdf2PCRobjClone(
@@ -245,6 +259,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
         self.powerplants_sw_ratio = vos.netcdf2PCRobjClone(
@@ -254,6 +269,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
         self.powerplants_sw_ratio = pcr.cover(self.powerplants_sw_ratio, 0.0)
 
@@ -266,6 +282,7 @@ class ThermoelectricWaterDemand(object):
             useDoy="yearly",
             LatitudeLongitude=True,
             specificFillValue=None,
+            absolutePath=self.inputDir,
         )
 
     def calculatePowerplantDemands(self, currTimeStep, routing):

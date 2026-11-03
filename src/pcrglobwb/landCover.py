@@ -240,20 +240,14 @@ class LandCover(object):
             )
 
         # crop coefficient files
-        self.cropCoefficientNC = utils.getFullPath(
-            self.iniItemsLC["cropCoefficientNC"], self.inputDir
-        )
+        self.cropCoefficientNC = self.iniItemsLC["cropCoefficientNC"]
 
         # interception capacity and cover fraction files
         if "interceptCapNC" in list(
             self.iniItemsLC.keys()
         ) and "coverFractionNC" in list(self.iniItemsLC.keys()):
-            self.interceptCapNC = utils.getFullPath(
-                self.iniItemsLC["interceptCapNC"], self.inputDir
-            )
-            self.coverFractionNC = utils.getFullPath(
-                self.iniItemsLC["coverFractionNC"], self.inputDir
-            )
+            self.interceptCapNC = self.iniItemsLC["interceptCapNC"]
+            self.coverFractionNC = self.iniItemsLC["coverFractionNC"]
         else:
             logger.warning(
                 f"The netcdf files for interceptCapNC (interception capacity) and/or coverFraction (canopy cover fraction) are NOT defined for the landCover type: {self.name}\n"
@@ -389,12 +383,14 @@ class LandCover(object):
                         lc_parameters[var] = pcr.cover(lc_parameters[var], 0.0)
             else:
                 # netCDF file
-                landCoverPropertiesNC = utils.getFullPath(
-                    self.iniItemsLC["landCoverMapsNC"], self.inputDir
-                )
+                landCoverPropertiesNC = self.iniItemsLC["landCoverMapsNC"]
                 for var in landCovParams:
                     lc_parameters[var] = pcr.cover(
-                        vos.netcdf2PCRobjCloneWithoutTime(landCoverPropertiesNC, var),
+                        vos.netcdf2PCRobjCloneWithoutTime(
+                            landCoverPropertiesNC,
+                            var,
+                            absolutePath=self.inputDir,
+                        ),
                         0.0,
                     )
 
@@ -426,11 +422,15 @@ class LandCover(object):
                 and not get_only_fracVegCover
             ):
 
-                if vos.checkVariableInNC(landCoverPropertiesNC, "arnoBeta"):
+                if vos.checkVariableInNC(
+                    utils.getFullPath(landCoverPropertiesNC, self.inputDir), "arnoBeta"
+                ):
 
                     logger.debug(f"arnoBeta read from {landCoverPropertiesNC}")
                     lc_parameters["arnoBeta"] = vos.netcdf2PCRobjCloneWithoutTime(
-                        landCoverPropertiesNC, "arnoBeta"
+                        landCoverPropertiesNC,
+                        "arnoBeta",
+                        absolutePath=self.inputDir,
                     )
 
             # option 3: approximated from minSoilDepthFrac and maxSoilDepthFrac
@@ -470,13 +470,14 @@ class LandCover(object):
                 ini_option = self.iniItemsLC[f"{var}NC"]
 
                 if ini_option.endswith(vos.netcdf_suffixes):
-                    netcdf_file = utils.getFullPath(ini_option, self.inputDir)
+                    netcdf_file = ini_option
                     lc_parameters[var] = pcr.cover(
                         vos.netcdf2PCRobjClone(
                             netcdf_file,
                             var,
                             date_in_string,
                             useDoy="yearly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     )
@@ -945,6 +946,7 @@ class LandCover(object):
                     "kc",
                     currTimeStep.fulldate,
                     useDoy="daily_seasonal",
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -964,6 +966,7 @@ class LandCover(object):
                     "interceptCapInput",
                     currTimeStep.fulldate,
                     useDoy="daily_seasonal",
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -975,6 +978,7 @@ class LandCover(object):
                     "coverFractionInput",
                     currTimeStep.fulldate,
                     useDoy="daily_seasonal",
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )

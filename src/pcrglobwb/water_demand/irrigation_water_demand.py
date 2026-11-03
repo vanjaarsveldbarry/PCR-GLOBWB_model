@@ -82,14 +82,13 @@ class IrrigationWaterDemand(object):
         elif "nc" in os.path.splitext(self.ini_items_for_irrigation_efficiency)[1]:
             try:
                 # netCDF file with a time dimension
-                ncFileIn = utils.getFullPath(
-                    self.ini_items_for_irrigation_efficiency, self.inputDir
-                )
+                ncFileIn = self.ini_items_for_irrigation_efficiency
                 self.irrigationEfficiency = vos.netcdf2PCRobjClone(
                     ncFileIn,
                     "automatic",
                     currTimeStep,
                     useDoy="yearly",
+                    absolutePath=self.inputDir,
                 )
 
             except Exception:

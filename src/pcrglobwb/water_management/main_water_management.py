@@ -37,11 +37,9 @@ class WaterManagement(object):
         if iniItems.waterManagementOptions["pumpingCapacityNC"] != "None":
             logger.info("Limit for annual regional groundwater abstraction is used.")
             self.limitRegionalAnnualGroundwaterAbstraction = True
-            self.pumpingCapacityNC = utils.getFullPath(
-                iniItems.waterManagementOptions["pumpingCapacityNC"],
-                self.inputDir,
-                False,
-            )
+            self.pumpingCapacityNC = iniItems.waterManagementOptions[
+                "pumpingCapacityNC"
+            ]
         else:
             logger.warning(
                 "NO LIMIT for regional groundwater (annual) pumping. It may result too high groundwater abstraction."
@@ -78,9 +76,9 @@ class WaterManagement(object):
         ]:
             logger.info("Monthly desalination water use is included.")
             self.includeDesalination = True
-            self.desalinationWaterFile = utils.getFullPath(
-                iniItems.waterManagementOptions["desalinationWater"], self.inputDir
-            )
+            self.desalinationWaterFile = iniItems.waterManagementOptions[
+                "desalinationWater"
+            ]
         else:
             logger.info("Monthly desalination water is NOT included.")
 
@@ -700,6 +698,7 @@ class WaterManagement(object):
                             "automatic",
                             currTimeStep.fulldate,
                             useDoy="monthly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     ),
@@ -997,6 +996,7 @@ class WaterManagement(object):
                     "region_ids",
                     currTimeStep.fulldate,
                     useDoy="yearly",
+                    absolutePath=self.inputDir,
                 )
 
                 other_ids = (
@@ -1019,6 +1019,7 @@ class WaterManagement(object):
                             "regional_pumping_limit",
                             currTimeStep.fulldate,
                             useDoy="yearly",
+                            absolutePath=self.inputDir,
                         ),
                         0.0,
                     ),

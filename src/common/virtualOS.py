@@ -545,7 +545,12 @@ def netcdf2PCRobjClone(
     useDoy=None,
     LatitudeLongitude=True,
     specificFillValue=None,
+    absolutePath=None,
 ):
+
+    if absolutePath is not None:
+        ncFile = utils.getFullPath(ncFile, absolutePath)
+
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
 

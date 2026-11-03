@@ -1231,26 +1231,15 @@ class Meteo(object):
                 int(currTimeStep.year),
             )
 
-        if (
-            self.using_daily_factor_for_downscaling
-            and self.downscalePrecipitationOption
-        ):
-            self.precipitation = vos.readDownscalingMeteo(
-                netcdf_file_name,
-                "automatic",
-                str(currTimeStep.fulldate),
-                useDoy=method_for_time_index,
-                LatitudeLongitude=True,
-            )
-
-        else:
-            self.precipitation = vos.readPCRmapClone(
-                netcdf_file_name,
-                "automatic",
-                str(currTimeStep.fulldate),
-                useDoy=method_for_time_index,
-                LatitudeLongitude=True,
-            )
+        self.precipitation = vos.readPCRmapClone(
+            netcdf_file_name,
+            "automatic",
+            str(currTimeStep.fulldate),
+            useDoy=method_for_time_index,
+            LatitudeLongitude=True,
+            bilinear=self.using_daily_factor_for_downscaling
+            and self.downscalePrecipitationOption,
+        )
 
         # RvB (13 Jul 2016): apply the conversion constant and factor
         self.precipitation = self.preConst + self.preFactor * self.precipitation
@@ -1300,23 +1289,15 @@ class Meteo(object):
                 int(currTimeStep.year),
             )
 
-        if self.using_daily_factor_for_downscaling and self.downscaleTemperatureOption:
-            self.temperature = vos.readDownscalingMeteo(
-                netcdf_file_name,
-                "automatic",
-                str(currTimeStep.fulldate),
-                useDoy=method_for_time_index,
-                LatitudeLongitude=True,
-            )
-
-        else:
-            self.temperature = vos.readPCRmapClone(
-                netcdf_file_name,
-                "automatic",
-                str(currTimeStep.fulldate),
-                useDoy=method_for_time_index,
-                LatitudeLongitude=True,
-            )
+        self.temperature = vos.readPCRmapClone(
+            netcdf_file_name,
+            "automatic",
+            str(currTimeStep.fulldate),
+            useDoy=method_for_time_index,
+            LatitudeLongitude=True,
+            bilinear=self.using_daily_factor_for_downscaling
+            and self.downscaleTemperatureOption,
+        )
 
         # RvB (13 Jul 2016): apply the conversion constant and factor
         self.temperature = self.tmpConst + self.tmpFactor * self.temperature
@@ -1366,26 +1347,15 @@ class Meteo(object):
                     int(currTimeStep.year),
                 )
 
-            if (
-                self.using_daily_factor_for_downscaling
-                and self.downscaleReferenceETPotOption
-            ):
-                self.referencePotET = vos.readDownscalingMeteo(
-                    netcdf_file_name,
-                    "automatic",
-                    str(currTimeStep.fulldate),
-                    useDoy=method_for_time_index,
-                    LatitudeLongitude=True,
-                )
-
-            else:
-                self.referencePotET = vos.readPCRmapClone(
-                    netcdf_file_name,
-                    "automatic",
-                    str(currTimeStep.fulldate),
-                    useDoy=method_for_time_index,
-                    LatitudeLongitude=True,
-                )
+            self.referencePotET = vos.readPCRmapClone(
+                netcdf_file_name,
+                "automatic",
+                str(currTimeStep.fulldate),
+                useDoy=method_for_time_index,
+                LatitudeLongitude=True,
+                bilinear=self.using_daily_factor_for_downscaling
+                and self.downscaleReferenceETPotOption,
+            )
 
             # RvB (13 Jul 2016): apply the conversion constant and factor
             self.referencePotET = (

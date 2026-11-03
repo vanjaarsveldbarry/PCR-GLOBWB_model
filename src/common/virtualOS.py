@@ -96,273 +96,6 @@ def readUpstreamDischarge(
     return outPCR
 
 
-def readDownscalingMeteo(
-    ncFile,
-    varName="automatic",
-    dateInput=None,
-    useDoy=None,
-    LatitudeLongitude=True,
-    specificFillValue=None,
-):
-    # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
-    # only works for square cells and if cellsizeClone <= cellsizeInput
-
-    if varName != "automatic":
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-
-    if ncFile in list(filecache.keys()):
-        f = filecache[ncFile]
-
-    else:
-        f = nc.Dataset(ncFile)
-        filecache[ncFile] = f
-
-    varName = str(varName)
-
-    if LatitudeLongitude:
-        try:
-            f.variables["lat"] = f.variables["latitude"]
-            f.variables["lon"] = f.variables["longitude"]
-        except Exception:
-            pass
-
-    if varName == "automatic":
-        nc_dims = [dim for dim in f.dimensions]
-        nc_vars = [var for var in f.variables]
-        for var in nc_vars:
-            if var not in nc_dims and var not in [
-                "lat",
-                "lon",
-                "latitude",
-                "longitude",
-            ]:
-                varName = var
-        logger.debug(f"reading variable: {varName} from the file: {ncFile}")
-
-    if dateInput is None:
-        logger.debug("Using the first time step in the netcdf file.")
-        idx = 0
-        if len(f.variables["time"]) > 1:
-            logger.warning(
-                "NOTE that there are more than one time steps in the netcdf file."
-            )
-
-    else:
-        date = dateInput
-        if useDoy == "Yes":
-            logger.debug("Finding the date from climatology doy index (1 to 366)")
-            idx = int(dateInput) - 1
-        # needed for netCDF files that contain only 12 monthly values (e.g. cropCoefficientWaterNC)
-        elif useDoy == "month":
-            logger.debug("Finding the date from climatology month index (1 to 12)")
-            # make sure the date has the correct format
-            if isinstance(date, str):
-                date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
-            idx = int(date.month) - 1
-        else:
-            # make sure the date has the correct format
-            if isinstance(date, str):
-                date = datetime.datetime.strptime(str(date), "%Y-%m-%d")
-            date = datetime.datetime(date.year, date.month, date.day)
-            if useDoy == "yearly":
-                date = datetime.datetime(date.year, int(1), int(1))
-            if useDoy == "monthly":
-                date = datetime.datetime(date.year, date.month, int(1))
-            if (
-                useDoy == "yearly"
-                or useDoy == "monthly"
-                or useDoy == "daily_seasonal"
-                or useDoy == "daily"
-                or useDoy == "daily_per_monthly_file"
-            ):
-                # if the desired year is not available, use the first or last available year
-                first_year_in_nc_file = findFirstYearInNCTime(f.variables["time"])
-                last_year_in_nc_file = findLastYearInNCTime(f.variables["time"])
-                if date.year < first_year_in_nc_file:
-                    if (
-                        date.day == 29
-                        and date.month == 2
-                        and calendar.isleap(date.year)
-                        and not calendar.isleap(first_year_in_nc_file)
-                    ):
-                        date = datetime.datetime(first_year_in_nc_file, date.month, 28)
-                    else:
-                        date = datetime.datetime(
-                            first_year_in_nc_file, date.month, date.day
-                        )
-                    logger.warning(
-                        f"Date {dateInput} NOT available in {ncFile} (variable: {varName}); "
-                        f"using {date.year}-{date.month}-{date.day} instead."
-                    )
-                if date.year > last_year_in_nc_file:
-                    if (
-                        date.day == 29
-                        and date.month == 2
-                        and calendar.isleap(date.year)
-                        and not calendar.isleap(last_year_in_nc_file)
-                    ):
-                        date = datetime.datetime(last_year_in_nc_file, date.month, 28)
-                    else:
-                        date = datetime.datetime(
-                            last_year_in_nc_file, date.month, date.day
-                        )
-                    logger.warning(
-                        f"Date {dateInput} NOT available in {ncFile} (variable: {varName}); "
-                        f"using {date.year}-{date.month}-{date.day} instead."
-                    )
-            try:
-                idx = nc.date2index(
-                    date,
-                    f.variables["time"],
-                    calendar=f.variables["time"].calendar,
-                    select="exact",
-                )
-                logger.debug(f"{date:%Y-%m-%d} found in netcdf; using select='exact'")
-            except Exception:
-                logger.debug(f"{date:%Y-%m-%d} not found; select='exact' not possible")
-                if useDoy == "daily":
-                    idx = nc.date2index(
-                        date,
-                        f.variables["time"],
-                        calendar=f.variables["time"].calendar,
-                        select="after",
-                    )
-                    select = "after"
-                else:
-                    try:
-                        idx = nc.date2index(
-                            date,
-                            f.variables["time"],
-                            calendar=f.variables["time"].calendar,
-                            select="before",
-                        )
-                        select = "before"
-                    except Exception:
-                        idx = nc.date2index(
-                            date,
-                            f.variables["time"],
-                            calendar=f.variables["time"].calendar,
-                            select="after",
-                        )
-                        select = "after"
-                date_string = nc.num2date(
-                    f.variables["time"][int(idx)],
-                    f.variables["time"].units,
-                    f.variables["time"].calendar,
-                )
-                logger.warning(
-                    f"Date {date.year}-{date.month}-{date.day} 00:00:00 NOT available in {ncFile} "
-                    f"(variable: {varName}); the '{select}' option is used, giving {date_string}."
-                )
-
-    idx = int(idx)
-    logger.debug(f"Using the date index {idx}")
-
-    date_string = nc.num2date(
-        f.variables["time"][int(idx)],
-        f.variables["time"].units,
-        f.variables["time"].calendar,
-    )
-    logger.debug(f"Using the datetime {date_string}")
-
-    attributeClone = utils.getCloneAttributes()
-    cellsizeClone = attributeClone["cellsize"]
-    rowsClone = attributeClone["rows"]
-    colsClone = attributeClone["cols"]
-    xULClone = attributeClone["xUL"]
-    yULClone = attributeClone["yUL"]
-    # attributes of the input (netCDF)
-    cellsizeInput = f.variables["lat"][0] - f.variables["lat"][1]
-    cellsizeInput = float(cellsizeInput)
-
-    # correction for files with an additional level dimension (e.g. WFDEI forcing: time, height/level, lat, lon)
-    if f.variables[varName].ndim == 4:
-        logger.warning("%s (%s) is 4D; last two dims read as lat/lon", ncFile, varName)
-        # file with an additional layer/dimension (original data)
-        cropData = f.variables[varName][int(idx), 0, :, :]
-    else:
-        # standard netCDF file (original data)
-        cropData = f.variables[varName][int(idx), :, :]
-
-    # needed in regridData2FinerGrid
-    factor = 1
-    factor = int(round(float(cellsizeInput) / float(cellsizeClone)))
-
-    # crop to the clone map
-    minX = min(abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput)))
-    xIdxSta = (
-        int(
-            np.where(
-                abs(f.variables["lon"][:] - (xULClone + 0.5 * cellsizeInput)) == minX
-            )[0]
-        )
-        - 1
-    )
-    if xIdxSta == -1:
-        xIdxSta = 0
-
-    xIdxEnd = int(math.ceil((xIdxSta + 1) + colsClone / (factor))) + 1
-
-    minY = min(abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput)))
-
-    yIdxSta = (
-        int(
-            np.where(
-                abs(f.variables["lat"][:] - (yULClone - 0.5 * cellsizeInput)) == minY
-            )[0]
-        )
-        - 1
-    )
-
-    yIdxEnd = int(math.ceil((yIdxSta + 1) + rowsClone / (factor))) + 1
-
-    # retrieve the data slice from the netCDF file
-
-    if f.variables[varName].ndim == 4:
-        logger.warning("%s (%s) is 4D; last two dims read as lat/lon", ncFile, varName)
-        # file with an additional layer
-        cropData = f.variables[varName][int(idx), 0, yIdxSta:yIdxEnd, xIdxSta:xIdxEnd]
-    else:
-        # standard netCDF file
-        cropData = f.variables[varName][int(idx), yIdxSta:yIdxEnd, xIdxSta:xIdxEnd]
-    lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1.0)), np.nan)[0, :]
-    lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1.0)), np.nan)[:, 0])
-
-    array = xr.DataArray(
-        cropData,
-        dims=["latitude", "longitude"],
-        coords=dict(
-            latitude=f.variables["lat"][yIdxSta:yIdxEnd],
-            longitude=f.variables["lon"][xIdxSta:xIdxEnd],
-        ),
-    ).sortby("latitude")
-
-    array = pyinterp.backends.xarray.Grid2D(array, geodetic=False)
-    mx, my = np.meshgrid(lon, lat, indexing="ij")
-    cropData = array.bivariate(
-        coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1
-    )
-    cropData = cropData.reshape(mx.shape).T
-
-    cropData = xr.DataArray(
-        cropData,
-        dims=["latitude", "longitude"],
-        coords=dict(longitude=lon, latitude=lat),
-    ).sortby("latitude", ascending=False)
-
-    cropData = cropData.values
-    if specificFillValue is not None:
-        outPCR = pcr.numpy2pcr(pcr.Scalar, cropData, float(specificFillValue))
-    else:
-        try:
-            outPCR = pcr.numpy2pcr(
-                pcr.Scalar, cropData, float(f.variables[varName]._FillValue)
-            )
-        except Exception:
-            outPCR = pcr.numpy2pcr(pcr.Scalar, cropData, float(MV))
-    return outPCR
-
-
 def checkVariableInNC(ncFile, varName):
 
     logger.debug(f"Checking whether {varName} is defined in {ncFile}")
@@ -399,11 +132,12 @@ def readPCRmapClone(
     isLddMap=False,
     cover=None,
     isNomMap=False,
+    bilinear=False,
 ):
     # v: input map file name or value; if the input map and the clone have different
     # grids, the map is resampled
     # varName, dateInput, useDoy, LatitudeLongitude and specificFillValue require
-    # netCDF or zarr input
+    # netCDF or zarr input; bilinear requires netCDF input
 
     def readNetcdf(ncFile, varName):
 
@@ -603,7 +337,10 @@ def readPCRmapClone(
         xslice = slice(None)
         if not sameClone:
             factor, xslice, yslice = getCloneCropSlices(
-                f.variables["lon"][:], f.variables["lat"][:], cellsizeInput
+                f.variables["lon"][:],
+                f.variables["lat"][:],
+                cellsizeInput,
+                padding=1 if bilinear else 0,
             )
 
         # retrieve the data slice from the netCDF file
@@ -619,30 +356,19 @@ def readPCRmapClone(
             # standard netCDF file
             cropData = var[idx, yslice, xslice]
 
-        # convert to a PCRaster object
-        if specificFillValue is not None:
-            outPCR = pcr.numpy2pcr(
-                pcr.Scalar,
-                regridData2FinerGrid(factor, cropData, float(specificFillValue)),
-                float(specificFillValue),
+        fillValue = specificFillValue
+        if fillValue is None:
+            fillValue = getattr(var, "_FillValue", getattr(var, "missing_value", MV))
+        fillValue = float(fillValue)
+
+        if bilinear and not sameClone:
+            fineData = interpolateToClone(
+                cropData, f.variables["lat"][yslice], f.variables["lon"][xslice]
             )
         else:
-            try:
-                outPCR = pcr.numpy2pcr(
-                    pcr.Scalar,
-                    regridData2FinerGrid(
-                        factor, cropData, float(f.variables[varName]._FillValue)
-                    ),
-                    float(f.variables[varName]._FillValue),
-                )
-            except Exception:
-                outPCR = pcr.numpy2pcr(
-                    pcr.Scalar,
-                    regridData2FinerGrid(
-                        factor, cropData, float(f.variables[varName].missing_value)
-                    ),
-                    float(f.variables[varName].missing_value),
-                )
+            fineData = regridData2FinerGrid(factor, cropData, fillValue)
+
+        outPCR = pcr.numpy2pcr(pcr.Scalar, fineData, fillValue)
 
         if useDoy == "daily_per_monthly_file":
             # close the file on the last day of the month and remove it from the cache
@@ -654,6 +380,9 @@ def readPCRmapClone(
         return outPCR
 
     def readZarr(zarrFile, varName):
+        if bilinear:
+            raise ValueError(f"{zarrFile}: bilinear needs netCDF input")
+
         if dateInput is None or useDoy != "Yes":
             raise ValueError(f"{zarrFile} needs a 1-based dateInput and useDoy='Yes'")
 
@@ -719,6 +448,7 @@ def readPCRmapClone(
             or useDoy is not None
             or not LatitudeLongitude
             or specificFillValue is not None
+            or bilinear
         )
     ):
         raise ValueError(
@@ -769,7 +499,7 @@ def readPCRmapClone(
     return PCRmap
 
 
-def getCloneCropSlices(lon, lat, cellsizeInput):
+def getCloneCropSlices(lon, lat, cellsizeInput, padding=0):
     attributeClone = utils.getCloneAttributes()
     cellsizeClone = attributeClone["cellsize"]
 
@@ -785,7 +515,30 @@ def getCloneCropSlices(lon, lat, cellsizeInput):
     yIdxSta = np.argmin(diffY)
     yIdxEnd = math.ceil(yIdxSta + attributeClone["rows"] / factor)
 
-    return factor, slice(xIdxSta, xIdxEnd), slice(yIdxSta, yIdxEnd)
+    return (
+        factor,
+        slice(max(xIdxSta - padding, 0), xIdxEnd + padding),
+        slice(max(yIdxSta - padding, 0), yIdxEnd + padding),
+    )
+
+
+def interpolateToClone(cropData, lat, lon):
+    lonClone = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1.0)), np.nan)[0, :]
+    latClone = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1.0)), np.nan)[:, 0])
+
+    grid = xr.DataArray(
+        cropData,
+        dims=["latitude", "longitude"],
+        coords=dict(latitude=lat, longitude=lon),
+    ).sortby("latitude")
+    grid = pyinterp.backends.xarray.Grid2D(grid, geodetic=False)
+
+    mx, my = np.meshgrid(lonClone, latClone, indexing="ij")
+    interpolated = grid.bivariate(
+        coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1
+    )
+    # numpy2pcr reads the raw buffer, so a flipped or transposed view would scramble the map
+    return interpolated.reshape(mx.shape).T[::-1].copy(order="C")
 
 
 def getNetcdfGridAttributes(f):

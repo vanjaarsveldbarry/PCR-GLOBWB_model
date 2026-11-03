@@ -65,9 +65,6 @@ class PCRGlobWB(object):
         )
         self.routing = routing.Routing(self._configuration, initialState, self.lddMap)
 
-        # short name for every land cover type (used in file names)
-        self.shortNames = ["f", "g", "p", "n"]
-
     def dumpState(self, outputDirectory, specific_date_string=None):
         # write all states to disk to allow restarting
 

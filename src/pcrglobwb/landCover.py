@@ -386,7 +386,7 @@ class LandCover(object):
                 landCoverPropertiesNC = self.iniItemsLC["landCoverMapsNC"]
                 for var in landCovParams:
                     lc_parameters[var] = pcr.cover(
-                        vos.netcdf2PCRobjCloneWithoutTime(
+                        vos.netcdf2PCRobjClone(
                             landCoverPropertiesNC,
                             var,
                             absolutePath=self.inputDir,
@@ -427,7 +427,7 @@ class LandCover(object):
                 ):
 
                     logger.debug(f"arnoBeta read from {landCoverPropertiesNC}")
-                    lc_parameters["arnoBeta"] = vos.netcdf2PCRobjCloneWithoutTime(
+                    lc_parameters["arnoBeta"] = vos.netcdf2PCRobjClone(
                         landCoverPropertiesNC,
                         "arnoBeta",
                         absolutePath=self.inputDir,

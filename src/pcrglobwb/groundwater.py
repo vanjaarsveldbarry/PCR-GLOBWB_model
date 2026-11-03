@@ -127,7 +127,7 @@ class Groundwater(object):
                 self.inputDir,
             )
         else:
-            self.specificYield = vos.netcdf2PCRobjCloneWithoutTime(
+            self.specificYield = vos.netcdf2PCRobjClone(
                 groundwaterPropertiesNC, "specificYield", absolutePath=self.inputDir
             )
         self.specificYield = pcr.cover(self.specificYield, 0.0)
@@ -144,7 +144,7 @@ class Groundwater(object):
                 self.inputDir,
             )
         else:
-            self.kSatAquifer = vos.netcdf2PCRobjCloneWithoutTime(
+            self.kSatAquifer = vos.netcdf2PCRobjClone(
                 groundwaterPropertiesNC, "kSatAquifer", absolutePath=self.inputDir
             )
         self.kSatAquifer = pcr.cover(self.kSatAquifer, 0.0)
@@ -156,7 +156,7 @@ class Groundwater(object):
                 self.recessionCoeff = None
             else:
                 logger.info(f"Reading recessionCoeff from {groundwaterPropertiesNC}")
-                self.recessionCoeff = vos.netcdf2PCRobjCloneWithoutTime(
+                self.recessionCoeff = vos.netcdf2PCRobjClone(
                     groundwaterPropertiesNC,
                     "recessionCoeff",
                     absolutePath=self.inputDir,
@@ -189,7 +189,7 @@ class Groundwater(object):
                 )
             else:
                 topoPropertiesNC = iniItems.landSurfaceOptions["topographyNC"]
-                aquiferWidth = vos.netcdf2PCRobjCloneWithoutTime(
+                aquiferWidth = vos.netcdf2PCRobjClone(
                     topoPropertiesNC,
                     "slopeLength",
                     absolutePath=self.inputDir,

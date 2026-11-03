@@ -39,7 +39,7 @@ class SoilAndTopoParameters(object):
         else:
             topoPropertiesNC = optionDict["topographyNC"]
             for var in topoParams:
-                vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(
+                vars(self)[var] = vos.netcdf2PCRobjClone(
                     topoPropertiesNC, var, absolutePath=self.inputDir
                 )
                 if var != "slopeLength":
@@ -74,7 +74,7 @@ class SoilAndTopoParameters(object):
         else:
             for i in range(0, len(dzRel)):
                 var = dzRel[i]
-                vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(
+                vars(self)[var] = vos.netcdf2PCRobjClone(
                     topoPropertiesNC, var, absolutePath=self.inputDir
                 )
                 vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
@@ -129,7 +129,7 @@ class SoilAndTopoParameters(object):
         else:
             soilPropertiesNC = optionDict["soilPropertiesNC"]
             for var in soilParameters:
-                vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(
+                vars(self)[var] = vos.netcdf2PCRobjClone(
                     soilPropertiesNC, var, absolutePath=self.inputDir
                 )
 
@@ -226,7 +226,7 @@ class SoilAndTopoParameters(object):
             soilPropertiesNC = optionDict["soilPropertiesNC"]
             for var in soilStorages:
                 temp = f"{var}Inp"
-                vars(self)[temp] = vos.netcdf2PCRobjCloneWithoutTime(
+                vars(self)[temp] = vos.netcdf2PCRobjClone(
                     soilPropertiesNC, var, absolutePath=self.inputDir
                 )
 

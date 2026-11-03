@@ -502,7 +502,7 @@ class Routing(object):
             # salinity: background TDS concentration (mg/L)
             self.backgroundSalinityNC = iniItems.routingOptions["backgroundSalinity"]
             # (mg/L)
-            self.backgroundSalinity = vos.netcdf2PCRobjCloneWithoutTime(
+            self.backgroundSalinity = vos.netcdf2PCRobjClone(
                 self.backgroundSalinityNC, "bgTDS", absolutePath=self.inputDir
             )
 
@@ -513,12 +513,8 @@ class Routing(object):
 
             # dissolved oxygen: elevation data
             self.elevation_path = iniItems.landSurfaceOptions["topographyNC"]
-            self.elevation = vos.netcdf2PCRobjCloneWithoutTime(
-                self.elevation_path,
-                "dem_average",
-                True,
-                None,
-                self.inputDir,
+            self.elevation = vos.netcdf2PCRobjClone(
+                self.elevation_path, "dem_average", absolutePath=self.inputDir
             )
 
             # fecal coliforms: temperature-dependent decay (day-1; Reder et al., 2015)
@@ -599,30 +595,30 @@ class Routing(object):
                 # average (regional) excretion rates
                 self.Dom_ExcrLoadNC = iniItems.routingOptions["Dom_ExcrLoadNC"]
                 # (g/capita/day)
-                self.DomTDS_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
+                self.DomTDS_ExcrLoad = vos.netcdf2PCRobjClone(
                     self.Dom_ExcrLoadNC, "Dom_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (g/capita/day)
-                self.DomBOD_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
+                self.DomBOD_ExcrLoad = vos.netcdf2PCRobjClone(
                     self.Dom_ExcrLoadNC, "Dom_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/capita/day)
-                self.DomFC_ExcrLoad = vos.netcdf2PCRobjCloneWithoutTime(
+                self.DomFC_ExcrLoad = vos.netcdf2PCRobjClone(
                     self.Dom_ExcrLoadNC, "Dom_Fixed_FCload", absolutePath=self.inputDir
                 )
 
                 # manufacturing: average (regional) effluent concentrations
                 self.Man_EfflConcNC = iniItems.routingOptions["Man_EfflConcNC"]
                 # (mg/L, i.e. g/m3)
-                self.ManTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.ManTDS_EfflConc = vos.netcdf2PCRobjClone(
                     self.Man_EfflConcNC, "Man_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
-                self.ManBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.ManBOD_EfflConc = vos.netcdf2PCRobjClone(
                     self.Man_EfflConcNC, "Man_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/100mL)
-                self.ManFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.ManFC_EfflConc = vos.netcdf2PCRobjClone(
                     self.Man_EfflConcNC, "Man_Fixed_FCload", absolutePath=self.inputDir
                 )
 
@@ -631,15 +627,15 @@ class Routing(object):
                 # average (regional) effluent concentrations
                 self.USR_EfflConcNC = iniItems.routingOptions["USR_EfflConcNC"]
                 # (mg/L, i.e. g/m3)
-                self.USRTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.USRTDS_EfflConc = vos.netcdf2PCRobjClone(
                     self.USR_EfflConcNC, "USR_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
-                self.USRBOD_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.USRBOD_EfflConc = vos.netcdf2PCRobjClone(
                     self.USR_EfflConcNC, "USR_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/100mL)
-                self.USRFC_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.USRFC_EfflConc = vos.netcdf2PCRobjClone(
                     self.USR_EfflConcNC, "USR_Fixed_FCload", absolutePath=self.inputDir
                 )
 
@@ -648,74 +644,74 @@ class Routing(object):
                 # average (regional) excretion rates
                 self.Liv_ExcrLoadNC = iniItems.routingOptions["Liv_ExcrLoadNC"]
                 # (g/stock/day)
-                self.Bufallo_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Bufallo_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "bufallo_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Chicken_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Chicken_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "chicken_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Cow_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Cow_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "cow_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Duck_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Duck_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "duck_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Goat_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Goat_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "goat_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Horse_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Horse_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "horse_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Pig_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Pig_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "pig_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Sheep_BODload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Sheep_BODload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "sheep_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Bufallo_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Bufallo_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "bufallo_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Chicken_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Chicken_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "chicken_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Cow_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Cow_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "cow_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Duck_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Duck_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "duck_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Goat_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Goat_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "goat_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Horse_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Horse_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "horse_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Pig_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Pig_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "pig_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Sheep_FCload = vos.netcdf2PCRobjCloneWithoutTime(
+                self.Sheep_FCload = vos.netcdf2PCRobjClone(
                     self.Liv_ExcrLoadNC, "sheep_FCload", absolutePath=self.inputDir
                 )
 
                 # irrigation: soil concentration averaged over the topsoil and subsoil
                 self.Irr_EfflConcNC = iniItems.routingOptions["Irr_EfflConcNC"]
                 # (mg/L)
-                self.IrrTDS_EfflConc = vos.netcdf2PCRobjCloneWithoutTime(
+                self.IrrTDS_EfflConc = vos.netcdf2PCRobjClone(
                     self.Irr_EfflConcNC, "soil_TDS", absolutePath=self.inputDir
                 )
 

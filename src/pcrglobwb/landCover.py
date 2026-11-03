@@ -73,7 +73,6 @@ class LandCover(object):
         if self.interceptionModuleType == "Modified":
             self.minInterceptCap = vos.readPCRmapClone(
                 self.iniItemsLC["minInterceptCap"],
-                self.tmpDir,
                 self.inputDir,
             )
 
@@ -137,12 +136,11 @@ class LandCover(object):
         ]
         for var in snowParams:
             input = self.iniItemsLC[str(var)]
-            vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+            vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
             vars(self)[var] = pcr.spatial(pcr.scalar(vars(self)[var]))
 
         self.cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.tmpDir,
             self.inputDir,
         )
         # added by Joren
@@ -154,13 +152,12 @@ class LandCover(object):
             self.snowTransport = self.iniItemsLC["snowTransport"]
             for var in ["Hv", "frho"]:
                 input = self.iniItemsLC[str(var)]
-                vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+                vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
                 vars(self)[var] = pcr.spatial(pcr.scalar(vars(self)[var]))
 
             self.reverseLDD = pcr.ldd(
                 vos.readPCRmapClone(
                     iniItems.landSurfaceOptions["invertedDEM"],
-                    self.tmpDir,
                     self.inputDir,
                 )
             )
@@ -225,7 +222,7 @@ class LandCover(object):
         landCovParamsAdd = ["minTopWaterLayer", "minCropKC"]
         for var in landCovParamsAdd:
             input = self.iniItemsLC[str(var)]
-            vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+            vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
             if input != "None":
                 vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
 
@@ -234,7 +231,6 @@ class LandCover(object):
         if self.iniItemsLC["name"].startswith("irr") and self.name != "irrPaddy":
             self.cropDeplFactor = vos.readPCRmapClone(
                 self.iniItemsLC["cropDeplFactor"],
-                self.tmpDir,
                 self.inputDir,
             )
         # infiltration/percolation losses of paddy fields
@@ -388,9 +384,7 @@ class LandCover(object):
                 landCoverPropertiesNC = None
                 for var in landCovParams:
                     input = self.iniItemsLC[str(var)]
-                    lc_parameters[var] = vos.readPCRmapClone(
-                        input, self.tmpDir, self.inputDir
-                    )
+                    lc_parameters[var] = vos.readPCRmapClone(input, self.inputDir)
                     if input != "None":
                         lc_parameters[var] = pcr.cover(lc_parameters[var], 0.0)
             else:
@@ -422,7 +416,6 @@ class LandCover(object):
                 logger.debug(f"The parameter arnoBeta: {self.iniItemsLC['arnoBeta']}")
                 lc_parameters["arnoBeta"] = vos.readPCRmapClone(
                     self.iniItemsLC["arnoBeta"],
-                    self.tmpDir,
                     self.inputDir,
                 )
 
@@ -494,7 +487,6 @@ class LandCover(object):
                             pcr.spatial(
                                 vos.readPCRmapClone(
                                     ini_option,
-                                    self.tmpDir,
                                     self.inputDir,
                                 )
                             ),
@@ -502,7 +494,7 @@ class LandCover(object):
                         )
                     except Exception:
                         lc_parameters[var] = vos.readPCRmapClone(
-                            ini_option, self.tmpDir, self.inputDir
+                            ini_option, self.inputDir
                         )
 
             # if not defined, approximate arnoBeta from minSoilDepthFrac and maxSoilDepthFrac
@@ -619,7 +611,6 @@ class LandCover(object):
         ):
             min_percolation_loss = vos.readPCRmapClone(
                 iniPaddyOptions["minPercolationLoss"],
-                self.tmpDir,
                 self.inputDir,
             )
         if (
@@ -628,7 +619,6 @@ class LandCover(object):
         ):
             min_percolation_loss = vos.readPCRmapClone(
                 iniPaddyOptions["maxPercolationLoss"],
-                self.tmpDir,
                 self.inputDir,
             )
         # percolation loss in paddy fields (m/day)
@@ -884,9 +874,7 @@ class LandCover(object):
             for var in initialVars:
                 if iniConditions is None:
                     input = self.iniItemsLC[f"{var}Ini"]
-                    vars(self)[var] = vos.readPCRmapClone(
-                        input, self.tmpDir, self.inputDir
-                    )
+                    vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
                     vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
                 else:
                     vars(self)[var] = iniConditions[str(var)]
@@ -909,7 +897,7 @@ class LandCover(object):
                 if iniConditions is None:
                     input = self.iniItemsLC[f"{var}Ini"]
                     vars(self)[var] = vos.readPCRmapClone(
-                        input, self.tmpDir, self.inputDir, cover=0.0
+                        input, self.inputDir, cover=0.0
                     )
                     vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
                 else:

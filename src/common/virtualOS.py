@@ -841,7 +841,6 @@ def writePCRmapToDir(v, outFileName, outDir):
 @retry
 def readPCRmapClone(
     v,
-    tmpDir,
     absolutePath=None,
     isLddMap=False,
     cover=None,

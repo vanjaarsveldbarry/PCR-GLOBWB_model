@@ -88,7 +88,6 @@ class LivestockWaterDemand(object):
                         pcr.cover(
                             vos.readPCRmapClone(
                                 v=grossFileName,
-                                tmpDir=self.tmpDir,
                             ),
                             0.0,
                         ),
@@ -106,7 +105,6 @@ class LivestockWaterDemand(object):
                         pcr.cover(
                             vos.readPCRmapClone(
                                 v=nettoFileName,
-                                tmpDir=self.tmpDir,
                             ),
                             0.0,
                         ),

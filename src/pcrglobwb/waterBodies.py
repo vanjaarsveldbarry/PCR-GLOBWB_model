@@ -22,7 +22,6 @@ class WaterBodies(object):
         if lddMap is None:
             self.lddMap = vos.readPCRmapClone(
                 iniItems.routingOptions["lddMap"],
-                self.tmpDir,
                 self.inputDir,
                 True,
             )
@@ -74,14 +73,10 @@ class WaterBodies(object):
         self.maxResvrFrac = 0.75
         if "minResvrFrac" in list(iniItems.routingOptions.keys()):
             minResvrFrac = iniItems.routingOptions["minResvrFrac"]
-            self.minResvrFrac = vos.readPCRmapClone(
-                minResvrFrac, self.tmpDir, self.inputDir
-            )
+            self.minResvrFrac = vos.readPCRmapClone(minResvrFrac, self.inputDir)
         if "maxResvrFrac" in list(iniItems.routingOptions.keys()):
             maxResvrFrac = iniItems.routingOptions["maxResvrFrac"]
-            self.maxResvrFrac = vos.readPCRmapClone(
-                maxResvrFrac, self.tmpDir, self.inputDir
-            )
+            self.maxResvrFrac = vos.readPCRmapClone(maxResvrFrac, self.inputDir)
 
     def getParameterFiles(
         self,
@@ -122,7 +117,6 @@ class WaterBodies(object):
             if self.fracWaterInp != "None":
                 self.fracWat = vos.readPCRmapClone(
                     f"{self.fracWaterInp}{year_used}.map",
-                    self.tmpDir,
                     self.inputDir,
                 )
 
@@ -145,7 +139,6 @@ class WaterBodies(object):
             if self.waterBodyIdsInp != "None":
                 self.waterBodyIds = vos.readPCRmapClone(
                     f"{self.waterBodyIdsInp}{year_used}.map",
-                    self.tmpDir,
                     self.inputDir,
                     False,
                     None,
@@ -201,7 +194,6 @@ class WaterBodies(object):
                     * 1000.0
                     * vos.readPCRmapClone(
                         f"{self.resSfAreaInp}{year_used}.map",
-                        self.tmpDir,
                         self.inputDir,
                     )
                 )
@@ -240,7 +232,6 @@ class WaterBodies(object):
             if self.waterBodyTypInp != "None":
                 self.waterBodyTyp = vos.readPCRmapClone(
                     f"{self.waterBodyTypInp}{year_used}.map",
-                    self.tmpDir,
                     self.inputDir,
                     False,
                     None,
@@ -293,7 +284,6 @@ class WaterBodies(object):
                     * 1000.0
                     * vos.readPCRmapClone(
                         f"{self.resMaxCapInp}{year_used}.map",
-                        self.tmpDir,
                         self.inputDir,
                     )
                 )

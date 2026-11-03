@@ -162,7 +162,6 @@ class Routing(object):
 
         self.lddMap = vos.readPCRmapClone(
             iniItems.routingOptions["lddMap"],
-            self.tmpDir,
             self.inputDir,
             True,
         )
@@ -176,7 +175,6 @@ class Routing(object):
         if iniItems.globalOptions["landmask"] != "None":
             self.landmask = vos.readPCRmapClone(
                 iniItems.globalOptions["landmask"],
-                self.tmpDir,
                 self.inputDir,
             )
         else:
@@ -189,7 +187,6 @@ class Routing(object):
         # cell area (m2)
         self.cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.tmpDir,
             self.inputDir,
         )
 
@@ -205,7 +202,7 @@ class Routing(object):
         routingParameters = ["gradient", "manningsN"]
         for var in routingParameters:
             input = iniItems.routingOptions[str(var)]
-            vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+            vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
 
         # parameters to estimate the channel dimensions (used in getRoutingParamAvgDischarge)
         self.eta = 0.25
@@ -220,7 +217,6 @@ class Routing(object):
                 self.minChannelWidth = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["minimumChannelWidth"],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     0.0,
@@ -233,7 +229,6 @@ class Routing(object):
                 self.predefinedChannelWidth = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["constantChannelWidth"],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     0.0,
@@ -246,7 +241,6 @@ class Routing(object):
                 self.predefinedChannelDepth = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["constantChannelDepth"],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     0.0,
@@ -268,7 +262,6 @@ class Routing(object):
                 self.channelLength = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["channelLength"],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     self.channelLength,
@@ -354,7 +347,7 @@ class Routing(object):
 
             # Manning's n of the floodplain areas
             input = iniItems.routingOptions["floodplainManningsN"]
-            self.floodplainManN = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+            self.floodplainManN = vos.readPCRmapClone(input, self.inputDir)
 
             # reduction parameter of the smoothing interval and error threshold
             self.reductionKK = 0.5
@@ -382,7 +375,6 @@ class Routing(object):
                 self.usingFixedBankfullCapacity = True
                 self.predefinedBankfullCapacity = vos.readPCRmapClone(
                     iniItems.routingOptions["bankfullCapacity"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 self.predefinedBankfullCapacity = pcr.cover(
@@ -411,7 +403,6 @@ class Routing(object):
         if "maxFloodDepth" in list(iniItems.routingOptions.keys()):
             self.maxFloodDepth = vos.readPCRmapClone(
                 iniItems.routingOptions["maxFloodDepth"],
-                self.tmpDir,
                 self.inputDir,
             )
 
@@ -561,7 +552,6 @@ class Routing(object):
             # solar radiation dependent decay: total suspended solids (Beusen et al., 2005)
             self.tss = vos.readPCRmapClone(
                 iniItems.routingOptions["TSSmap"],
-                self.tmpDir,
                 self.inputDir,
             )
             # (m2/W; Reder et al., 2015)
@@ -804,52 +794,43 @@ class Routing(object):
             # read the initial conditions from the PCRaster maps in the ini file (at the start of the model)
             self.timestepsToAvgDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["timestepsToAvgDischargeIni"],
-                self.tmpDir,
                 self.inputDir,
             )
 
             self.channelStorage = vos.readPCRmapClone(
                 iniItems.routingOptions["channelStorageIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             self.readAvlChannelStorage = vos.readPCRmapClone(
                 iniItems.routingOptions["readAvlChannelStorageIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             self.avgDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["avgDischargeLongIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             self.m2tDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["m2tDischargeLongIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             self.avgBaseflow = vos.readPCRmapClone(
                 iniItems.routingOptions["avgBaseflowLongIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             self.riverbedExchange = vos.readPCRmapClone(
                 iniItems.routingOptions["riverbedExchangeIni"],
-                self.tmpDir,
                 self.inputDir,
             )
 
             # initial condition introduced in version 2.0.2: avgDischargeShort
             self.avgDischargeShort = vos.readPCRmapClone(
                 iniItems.routingOptions["avgDischargeShortIni"],
-                self.tmpDir,
                 self.inputDir,
             )
 
             # initial conditions needed for the kinematic wave methods
             self.subDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["subDischargeIni"],
-                self.tmpDir,
                 self.inputDir,
             )
 
@@ -857,12 +838,10 @@ class Routing(object):
             if self.using_qualloc:
                 self.discharge = vos.readPCRmapClone(
                     iniItems.routingOptions["dischargeIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 self.runoff = vos.readPCRmapClone(
                     iniItems.routingOptions["runoffIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
 
@@ -870,19 +849,16 @@ class Routing(object):
                     # salinity pollution
                     self.salinity = vos.readPCRmapClone(
                         iniItems.routingOptions["salinityIni"],
-                        self.tmpDir,
                         self.inputDir,
                     )
                     # organic pollution
                     self.organic = vos.readPCRmapClone(
                         iniItems.routingOptions["organicIni"],
-                        self.tmpDir,
                         self.inputDir,
                     )
                     # pathogen pollution
                     self.pathogen = vos.readPCRmapClone(
                         iniItems.routingOptions["pathogenIni"],
-                        self.tmpDir,
                         self.inputDir,
                     )
 
@@ -890,30 +866,25 @@ class Routing(object):
             if self.quality:
                 self.waterTemp = vos.readPCRmapClone(
                     iniItems.routingOptions["waterTemperatureIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 self.iceThickness = vos.readPCRmapClone(
                     iniItems.routingOptions["iceThicknessIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 # salinity pollution
                 self.routedTDS = vos.readPCRmapClone(
                     iniItems.routingOptions["routedTDSIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 # organic pollution
                 self.routedBOD = vos.readPCRmapClone(
                     iniItems.routingOptions["routedBODIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 # pathogen pollution
                 self.routedFC = vos.readPCRmapClone(
                     iniItems.routingOptions["routedFCIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
 
@@ -921,12 +892,10 @@ class Routing(object):
                 if self.calculateLoads and not self.offlineRun:
                     self.avg_irrGrossDemand = vos.readPCRmapClone(
                         iniItems.routingOptions["avg_irrGrossDemandIni"],
-                        self.tmpDir,
                         self.inputDir,
                     )
                     self.avg_netLqWaterToSoil = vos.readPCRmapClone(
                         iniItems.routingOptions["avg_netLqWaterToSoilIni"],
-                        self.tmpDir,
                         self.inputDir,
                     )
 
@@ -934,72 +903,58 @@ class Routing(object):
                     if self.loadsPerSector:
                         self.routedDomTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedDomTDSIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedDomBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedDomBODIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedDomFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedDomFCIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedManTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedManTDSIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedManBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedManBODIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedManFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedManFCIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedUSRTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedUSRTDSIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedUSRBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedUSRBODIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedUSRFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedUSRFCIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedintLivBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedintLivBODIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedintLivFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedintLivFCIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedextLivBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedextLivBODIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedextLivFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedextLivFCIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
                         self.routedIrrTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedIrrTDSIni"],
-                            self.tmpDir,
                             self.inputDir,
                         )
 
@@ -1201,18 +1156,15 @@ class Routing(object):
             # read the initial conditions from the PCRaster maps in the ini file (at the start of the model)
             self.avgInflow = vos.readPCRmapClone(
                 iniItems.routingOptions["avgLakeReservoirInflowShortIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             self.avgOutflow = vos.readPCRmapClone(
                 iniItems.routingOptions["avgLakeReservoirOutflowLongIni"],
-                self.tmpDir,
                 self.inputDir,
             )
             if iniItems.routingOptions["waterBodyStorageIni"] is not None:
                 self.waterBodyStorage = vos.readPCRmapClone(
                     iniItems.routingOptions["waterBodyStorageIni"],
-                    self.tmpDir,
                     self.inputDir,
                 )
                 self.waterBodyStorage = pcr.ifthen(
@@ -1287,7 +1239,7 @@ class Routing(object):
 
             if relativeElevationFileNC is None:
                 inputName = relZFileName % (areaFractions[iCnt] * 100)
-                relZ[iCnt] = vos.readPCRmapClone(inputName, self.tmpDir, self.inputDir)
+                relZ[iCnt] = vos.readPCRmapClone(inputName, self.inputDir)
             if relativeElevationFileNC is not None:
                 # TODO: use a netCDF file
                 pass

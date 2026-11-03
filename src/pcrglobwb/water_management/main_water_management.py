@@ -66,7 +66,6 @@ class WaterManagement(object):
         # cell area (m2)
         cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.tmpDir,
             self.inputDir,
         )
         self.cellArea = pcr.ifthen(self.landmask, cellArea)
@@ -175,7 +174,6 @@ class WaterManagement(object):
                         iniItems.waterManagementOptions[
                             "irrigationSurfaceWaterAbstractionFractionData"
                         ],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     0.0,
@@ -189,7 +187,6 @@ class WaterManagement(object):
                         iniItems.waterManagementOptions[
                             "irrigationSurfaceWaterAbstractionFractionDataQuality"
                         ],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     0.0,
@@ -216,7 +213,6 @@ class WaterManagement(object):
             iniItems.waterManagementOptions[
                 "threshold_to_maximize_irrigation_surface_water"
             ],
-            self.tmpDir,
             self.inputDir,
         )
 
@@ -235,7 +231,6 @@ class WaterManagement(object):
             iniItems.waterManagementOptions[
                 "threshold_to_minimize_fossil_groundwater_irrigation"
             ],
-            self.tmpDir,
             self.inputDir,
         )
 
@@ -251,7 +246,6 @@ class WaterManagement(object):
             )
         self.maximumDailyGroundwaterAbstraction = vos.readPCRmapClone(
             iniItems.waterManagementOptions["maximumDailyGroundwaterAbstraction"],
-            self.tmpDir,
             self.inputDir,
         )
 
@@ -267,7 +261,6 @@ class WaterManagement(object):
             ] = "0.020"
         self.maximumDailyFossilGroundwaterAbstraction = vos.readPCRmapClone(
             iniItems.waterManagementOptions["maximumDailyFossilGroundwaterAbstraction"],
-            self.tmpDir,
             self.inputDir,
         )
 
@@ -296,7 +289,6 @@ class WaterManagement(object):
                             iniItems.waterManagementOptions[
                                 "maximumNonIrrigationSurfaceWaterAbstractionFractionData"
                             ],
-                            self.tmpDir,
                             self.inputDir,
                         ),
                         1.0,
@@ -326,7 +318,6 @@ class WaterManagement(object):
                         iniItems.waterManagementOptions[
                             "predefinedNonIrrigationSurfaceWaterAbstractionFractionData"
                         ],
-                        self.tmpDir,
                         self.inputDir,
                     ),
                     1.0,
@@ -343,7 +334,6 @@ class WaterManagement(object):
     def get_allocation_zone(self, zonal_map_file_name):
         allocSegments = vos.readPCRmapClone(
             zonal_map_file_name,
-            self.tmpDir,
             self.inputDir,
             isLddMap=False,
             cover=None,

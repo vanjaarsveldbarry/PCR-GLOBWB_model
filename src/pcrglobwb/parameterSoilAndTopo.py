@@ -34,7 +34,7 @@ class SoilAndTopoParameters(object):
         if optionDict["topographyNC"] == str(None):
             for var in topoParams:
                 input = iniItems.landSurfaceOptions[str(var)]
-                vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+                vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
                 if var != "slopeLength":
                     vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
         else:
@@ -70,7 +70,7 @@ class SoilAndTopoParameters(object):
             for i in range(0, len(dzRel)):
                 var = dzRel[i]
                 input = optionDict[str(var)]
-                vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+                vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
                 vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
                 if i > 0:
                     vars(self)[var] = pcr.max(vars(self)[var], vars(self)[dzRel[i - 1]])
@@ -107,7 +107,7 @@ class SoilAndTopoParameters(object):
         if optionDict["soilPropertiesNC"] == str(None):
             for var in soilParameters:
                 input = optionDict[str(var)]
-                vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+                vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
                 vars(self)[var] = pcr.scalar(vars(self)[var])
 
                 if input == "percolationImp":
@@ -209,9 +209,7 @@ class SoilAndTopoParameters(object):
             for var in soilStorages:
                 input = optionDict[str(var)]
                 temp = f"{var}Inp"
-                vars(self)[temp] = vos.readPCRmapClone(
-                    input, self.tmpDir, self.inputDir
-                )
+                vars(self)[temp] = vos.readPCRmapClone(input, self.inputDir)
 
                 extrapolate = True
                 if (
@@ -313,7 +311,7 @@ class SoilAndTopoParameters(object):
         for var in soilParameterConstants:
             if var in list(iniItems.landSurfaceOptions.keys()):
                 input = iniItems.landSurfaceOptions[str(var)]
-                vars(self)[var] = vos.readPCRmapClone(input, self.tmpDir, self.inputDir)
+                vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
 
         # soil parameters based on the FAO soil map
         self.readSoilMapOfFAO(iniItems, optionDict)

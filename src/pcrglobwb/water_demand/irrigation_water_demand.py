@@ -40,7 +40,6 @@ class IrrigationWaterDemand(object):
 
         self.cropDeplFactor = vos.readPCRmapClone(
             self.iniItemsIrrLC["cropDeplFactor"],
-            self.tmpDir,
             self.inputDir,
         )
 
@@ -77,7 +76,6 @@ class IrrigationWaterDemand(object):
         if self.ini_items_for_irrigation_efficiency.endswith(".map"):
             self.irrigationEfficiency = vos.readPCRmapClone(
                 self.ini_items_for_irrigation_efficiency,
-                self.tmpDir,
                 self.inputDir,
             )
         # netCDF file
@@ -99,7 +97,6 @@ class IrrigationWaterDemand(object):
                 logger.warning(f"{ncFileIn}: no time dimension, using constant values")
                 self.irrigationEfficiency = vos.readPCRmapClone(
                     self.ini_items_for_irrigation_efficiency,
-                    self.tmpDir,
                     self.inputDir,
                 )
             # TODO: remove try/except

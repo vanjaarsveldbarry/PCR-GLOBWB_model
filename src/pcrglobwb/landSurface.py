@@ -105,7 +105,6 @@ class LandSurface(object):
         # cell area (m2)
         self.cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.tmpDir,
             self.inputDir,
         )
         self.cellArea = pcr.ifthen(self.landmask, self.cellArea)
@@ -838,7 +837,6 @@ class LandSurface(object):
                             routing.WaterBodies.fracWaterInp
                             + str(currTimeStep.year)
                             + ".map",
-                            self.tmpDir,
                             self.inputDir,
                         )
                     else:
@@ -855,7 +853,6 @@ class LandSurface(object):
                     if routing.WaterBodies.fracWaterInp != "None":
                         routing.WaterBodies.fracWat = vos.readPCRmapClone(
                             routing.WaterBodies.fracWaterInp,
-                            self.tmpDir,
                             self.inputDir,
                         )
                     else:
@@ -1038,7 +1035,7 @@ class LandSurface(object):
             )
             # (m2; the input file is in hectare)
             self.irrigationArea = 10000.0 * pcr.cover(
-                vos.readPCRmapClone(irrigation_pcraster_file, self.tmpDir),
+                vos.readPCRmapClone(irrigation_pcraster_file),
                 0.0,
             )
 

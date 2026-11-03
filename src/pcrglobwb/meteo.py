@@ -48,7 +48,7 @@ class Meteo(object):
             if "avgAnnualPrecipitationIni" in list(iniItems.meteoOptions.keys()):
                 self.avgAnnualPrecipitation = vos.readPCRmapClone(
                     iniItems.meteoOptions["avgAnnualPrecipitationIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 self.avgAnnualPrecipitation = pcr.scalar(0.0)
@@ -56,7 +56,7 @@ class Meteo(object):
             if "avgAnnualTemperatureIni" in list(iniItems.meteoOptions.keys()):
                 self.avgAnnualTemperature = vos.readPCRmapClone(
                     iniItems.meteoOptions["avgAnnualTemperatureIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 self.avgAnnualTemperature = pcr.scalar(0.0)
@@ -64,7 +64,7 @@ class Meteo(object):
             if "avgAnnualDiurnalDeltaTempIni" in list(iniItems.meteoOptions.keys()):
                 self.avgAnnualDiurnalDeltaTemp = vos.readPCRmapClone(
                     iniItems.meteoOptions["avgAnnualDiurnalDeltaTempIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 self.avgAnnualDiurnalDeltaTemp = pcr.scalar(0.0)
@@ -101,7 +101,7 @@ class Meteo(object):
         if iniItems.globalOptions["landmask"] != "None":
             self.landmask = vos.readPCRmapClone(
                 iniItems.globalOptions["landmask"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         # note: to keep the water balance consistent during downscaling, perhaps we should not mask during the calculation (only for reporting and reading initial conditions)
 
@@ -180,7 +180,7 @@ class Meteo(object):
             self.elevation_meteo = pcr.cover(
                 vos.readPCRmapClone(
                     iniItems.meteoOptions["dem_for_input_meteo"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -324,7 +324,7 @@ class Meteo(object):
             self.preConst = pcr.cover(
                 vos.readPCRmapClone(
                     meteoOptions["precipitationConstant"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -332,7 +332,7 @@ class Meteo(object):
             self.preFactor = pcr.cover(
                 vos.readPCRmapClone(
                     meteoOptions["precipitationFactor"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 1.0,
             )
@@ -340,7 +340,7 @@ class Meteo(object):
             self.tmpConst = pcr.cover(
                 vos.readPCRmapClone(
                     meteoOptions["temperatureConstant"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -348,7 +348,7 @@ class Meteo(object):
             self.tmpFactor = pcr.cover(
                 vos.readPCRmapClone(
                     meteoOptions["temperatureFactor"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 1.0,
             )
@@ -356,7 +356,7 @@ class Meteo(object):
             self.refETPotConst = pcr.cover(
                 vos.readPCRmapClone(
                     meteoOptions["referenceEPotConstant"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -364,7 +364,7 @@ class Meteo(object):
             self.refETPotFactor = pcr.cover(
                 vos.readPCRmapClone(
                     meteoOptions["referenceEPotFactor"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 1.0,
             )
@@ -377,7 +377,7 @@ class Meteo(object):
                 vars(self)[consta_var_name] = pcr.cover(
                     vos.readPCRmapClone(
                         meteoOptions[consta_var_name],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     0.0,
                 )
@@ -387,7 +387,7 @@ class Meteo(object):
                 vars(self)[factor_var_name] = pcr.cover(
                     vos.readPCRmapClone(
                         meteoOptions[factor_var_name],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     1.0,
                 )
@@ -437,20 +437,20 @@ class Meteo(object):
             # anomaly DEM
             highResolutionDEM = vos.readPCRmapClone(
                 iniItems.meteoDownscalingOptions["highResolutionDEM"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             highResolutionDEM = pcr.cover(highResolutionDEM, 0.0)
             highResolutionDEM = pcr.max(highResolutionDEM, 0.0)
             self.meteoDownscaleIds = vos.readPCRmapClone(
                 iniItems.meteoDownscalingOptions["meteoDownscaleIds"],
-                self.inputDir,
+                absolutePath=self.inputDir,
                 isLddMap=False,
                 cover=None,
                 isNomMap=True,
             )
             self.cellArea = vos.readPCRmapClone(
                 iniItems.routingOptions["cellAreaMap"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             loweResolutionDEM = pcr.areatotal(
                 pcr.cover(highResolutionDEM * self.cellArea, 0.0),
@@ -488,7 +488,7 @@ class Meteo(object):
                 self.forcingSmoothing = True
                 self.smoothingWindowsLength = vos.readPCRmapClone(
                     iniItems.meteoDownscalingOptions["smoothingWindowsLength"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 logger.info(
                     "Forcing data will be smoothed with 'windowaverage' using the window length:"
@@ -996,7 +996,7 @@ class Meteo(object):
             self.precipitation = pcr.max(0.0, self.precipitation)
 
         else:
-            preSlope = 0.001 * vos.netcdf2PCRobjClone(
+            preSlope = 0.001 * vos.readPCRmapClone(
                 self.precipLapseRateNC,
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
@@ -1006,7 +1006,7 @@ class Meteo(object):
             preSlope = pcr.cover(preSlope, 0.0)
             preSlope = pcr.max(0.0, preSlope)
 
-            preCriteria = vos.netcdf2PCRobjClone(
+            preCriteria = vos.readPCRmapClone(
                 self.precipitCorrelNC,
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
@@ -1066,7 +1066,7 @@ class Meteo(object):
             self.temperature = self.temperature + factor
 
         else:
-            tmpSlope = 1.000 * vos.netcdf2PCRobjClone(
+            tmpSlope = 1.000 * vos.readPCRmapClone(
                 self.temperLapseRateNC,
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
@@ -1075,7 +1075,7 @@ class Meteo(object):
             )
             # must be negative
             tmpSlope = pcr.min(0.0, tmpSlope)
-            tmpCriteria = vos.netcdf2PCRobjClone(
+            tmpCriteria = vos.readPCRmapClone(
                 self.temperatCorrelNC,
                 dateInput=currTimeStep.month,
                 useDoy="Yes",
@@ -1111,7 +1111,7 @@ class Meteo(object):
 
         # TODO: add CorrelationCriteria to the config file
 
-        tmpSlope = 1.000 * vos.netcdf2PCRobjClone(
+        tmpSlope = 1.000 * vos.readPCRmapClone(
             self.temperLapseRateNC,
             dateInput=currTimeStep.month,
             useDoy="Yes",
@@ -1120,7 +1120,7 @@ class Meteo(object):
         )
         # must be negative
         tmpSlope = pcr.min(0.0, tmpSlope)
-        tmpCriteria = vos.netcdf2PCRobjClone(
+        tmpCriteria = vos.readPCRmapClone(
             self.temperatCorrelNC,
             dateInput=currTimeStep.month,
             useDoy="Yes",
@@ -1244,7 +1244,7 @@ class Meteo(object):
             )
 
         else:
-            self.precipitation = vos.netcdf2PCRobjClone(
+            self.precipitation = vos.readPCRmapClone(
                 netcdf_file_name,
                 "automatic",
                 str(currTimeStep.fulldate),
@@ -1310,7 +1310,7 @@ class Meteo(object):
             )
 
         else:
-            self.temperature = vos.netcdf2PCRobjClone(
+            self.temperature = vos.readPCRmapClone(
                 netcdf_file_name,
                 "automatic",
                 str(currTimeStep.fulldate),
@@ -1379,7 +1379,7 @@ class Meteo(object):
                 )
 
             else:
-                self.referencePotET = vos.netcdf2PCRobjClone(
+                self.referencePotET = vos.readPCRmapClone(
                     netcdf_file_name,
                     "automatic",
                     str(currTimeStep.fulldate),
@@ -1404,8 +1404,8 @@ class Meteo(object):
                 method_for_time_index = None
                 method_for_time_index = "daily"
                 netcdf_file_name = self.iniItems.meteoOptions[meteo_var_name]
-                vars(self)[meteo_var_name] = vos.netcdf2PCRobjClone(
-                    ncFile=netcdf_file_name,
+                vars(self)[meteo_var_name] = vos.readPCRmapClone(
+                    v=netcdf_file_name,
                     varName="automatic",
                     dateInput=str(currTimeStep.fulldate),
                     useDoy=method_for_time_index,

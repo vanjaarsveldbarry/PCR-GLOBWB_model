@@ -30,7 +30,7 @@ class Reporting(object):
         ):
             self.landmask_for_reporting = vos.readPCRmapClone(
                 configuration.reportingOptions["landmask_for_reporting"],
-                configuration.globalOptions["inputDir"],
+                absolutePath=configuration.globalOptions["inputDir"],
             )
 
     def initiate_reporting(self):

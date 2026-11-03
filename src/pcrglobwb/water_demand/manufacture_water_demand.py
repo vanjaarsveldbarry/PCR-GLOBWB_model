@@ -46,8 +46,8 @@ class ManufactureWaterDemand(object):
                 self.manufactureGrossDemand = pcr.max(
                     0.0,
                     pcr.cover(
-                        vos.netcdf2PCRobjClone(
-                            ncFile=self.manufactureWaterDemandFile,
+                        vos.readPCRmapClone(
+                            v=self.manufactureWaterDemandFile,
                             varName="manufactureGrossDemand",
                             dateInput=currTimeStep.fulldate,
                             useDoy="monthly",
@@ -60,8 +60,8 @@ class ManufactureWaterDemand(object):
                 self.manufactureNettoDemand = pcr.max(
                     0.0,
                     pcr.cover(
-                        vos.netcdf2PCRobjClone(
-                            ncFile=self.manufactureWaterDemandFile,
+                        vos.readPCRmapClone(
+                            v=self.manufactureWaterDemandFile,
                             varName="manufactureNettoDemand",
                             dateInput=currTimeStep.fulldate,
                             useDoy="monthly",

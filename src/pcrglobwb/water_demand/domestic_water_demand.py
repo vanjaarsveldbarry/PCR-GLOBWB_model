@@ -49,8 +49,8 @@ class DomesticWaterDemand(object):
                     self.domesticGrossDemand = pcr.max(
                         0.0,
                         pcr.cover(
-                            vos.netcdf2PCRobjClone(
-                                ncFile=self.domesticWaterDemandFile,
+                            vos.readPCRmapClone(
+                                v=self.domesticWaterDemandFile,
                                 varName="domesticGrossDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",
@@ -63,8 +63,8 @@ class DomesticWaterDemand(object):
                     self.domesticNettoDemand = pcr.max(
                         0.0,
                         pcr.cover(
-                            vos.netcdf2PCRobjClone(
-                                ncFile=self.domesticWaterDemandFile,
+                            vos.readPCRmapClone(
+                                v=self.domesticWaterDemandFile,
                                 varName="domesticNettoDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",

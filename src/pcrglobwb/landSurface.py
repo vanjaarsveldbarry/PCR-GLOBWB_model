@@ -105,7 +105,7 @@ class LandSurface(object):
         # cell area (m2)
         self.cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
         self.cellArea = pcr.ifthen(self.landmask, self.cellArea)
 
@@ -823,7 +823,7 @@ class LandSurface(object):
         else:
             if routing.includeWaterBodies:
                 if routing.WaterBodies.useNetCDF:
-                    routing.WaterBodies.fracWat = vos.netcdf2PCRobjClone(
+                    routing.WaterBodies.fracWat = vos.readPCRmapClone(
                         routing.WaterBodies.ncFileInp,
                         "fracWaterInp",
                         currTimeStep.fulldate,
@@ -836,13 +836,13 @@ class LandSurface(object):
                             routing.WaterBodies.fracWaterInp
                             + str(currTimeStep.year)
                             + ".map",
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                     else:
                         routing.WaterBodies.fracWat = pcr.spatial(pcr.scalar(0.0))
             else:
                 if routing.WaterBodies.useNetCDF:
-                    routing.WaterBodies.fracWat = vos.netcdf2PCRobjClone(
+                    routing.WaterBodies.fracWat = vos.readPCRmapClone(
                         routing.WaterBodies.ncFileInp,
                         "fracWaterInp",
                         currTimeStep.fulldate,
@@ -853,7 +853,7 @@ class LandSurface(object):
                     if routing.WaterBodies.fracWaterInp != "None":
                         routing.WaterBodies.fracWat = vos.readPCRmapClone(
                             routing.WaterBodies.fracWaterInp,
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                     else:
                         routing.WaterBodies.fracWat = pcr.spatial(pcr.scalar(0.0))
@@ -1018,7 +1018,7 @@ class LandSurface(object):
             fulldateInString = f"{yearInString}-01-01"
             # (m2; the input file is in hectare)
             self.irrigationArea = 10000.0 * pcr.cover(
-                vos.netcdf2PCRobjClone(
+                vos.readPCRmapClone(
                     self.dynamicIrrigationAreaFile,
                     "irrigationArea",
                     fulldateInString,
@@ -1036,7 +1036,9 @@ class LandSurface(object):
             )
             # (m2; the input file is in hectare)
             self.irrigationArea = 10000.0 * pcr.cover(
-                vos.readPCRmapClone(irrigation_pcraster_file, self.inputDir),
+                vos.readPCRmapClone(
+                    irrigation_pcraster_file, absolutePath=self.inputDir
+                ),
                 0.0,
             )
 

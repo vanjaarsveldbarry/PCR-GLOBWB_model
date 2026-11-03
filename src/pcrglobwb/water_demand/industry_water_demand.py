@@ -48,8 +48,8 @@ class IndustryWaterDemand(object):
                     self.industryGrossDemand = pcr.max(
                         0.0,
                         pcr.cover(
-                            vos.netcdf2PCRobjClone(
-                                ncFile=self.industryWaterDemandFile,
+                            vos.readPCRmapClone(
+                                v=self.industryWaterDemandFile,
                                 varName="industryGrossDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",
@@ -62,8 +62,8 @@ class IndustryWaterDemand(object):
                     self.industryNettoDemand = pcr.max(
                         0.0,
                         pcr.cover(
-                            vos.netcdf2PCRobjClone(
-                                ncFile=self.industryWaterDemandFile,
+                            vos.readPCRmapClone(
+                                v=self.industryWaterDemandFile,
                                 varName="industryNettoDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",

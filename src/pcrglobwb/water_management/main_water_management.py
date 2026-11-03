@@ -64,7 +64,7 @@ class WaterManagement(object):
         # cell area (m2)
         cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
         self.cellArea = pcr.ifthen(self.landmask, cellArea)
 
@@ -172,7 +172,7 @@ class WaterManagement(object):
                         iniItems.waterManagementOptions[
                             "irrigationSurfaceWaterAbstractionFractionData"
                         ],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     0.0,
                 )
@@ -185,7 +185,7 @@ class WaterManagement(object):
                         iniItems.waterManagementOptions[
                             "irrigationSurfaceWaterAbstractionFractionDataQuality"
                         ],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     0.0,
                 )
@@ -211,7 +211,7 @@ class WaterManagement(object):
             iniItems.waterManagementOptions[
                 "threshold_to_maximize_irrigation_surface_water"
             ],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
 
         # threshold_to_minimize_fossil_groundwater_irrigation
@@ -229,7 +229,7 @@ class WaterManagement(object):
             iniItems.waterManagementOptions[
                 "threshold_to_minimize_fossil_groundwater_irrigation"
             ],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
 
         # maximum daily rate of groundwater abstraction (m/day)
@@ -244,7 +244,7 @@ class WaterManagement(object):
             )
         self.maximumDailyGroundwaterAbstraction = vos.readPCRmapClone(
             iniItems.waterManagementOptions["maximumDailyGroundwaterAbstraction"],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
 
         # maximum daily rate of fossil groundwater abstraction (m/day)
@@ -259,7 +259,7 @@ class WaterManagement(object):
             ] = "0.020"
         self.maximumDailyFossilGroundwaterAbstraction = vos.readPCRmapClone(
             iniItems.waterManagementOptions["maximumDailyFossilGroundwaterAbstraction"],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
 
         # maximum predefined surface water fraction to satisfy the industrial and domestic demand
@@ -287,7 +287,7 @@ class WaterManagement(object):
                             iniItems.waterManagementOptions[
                                 "maximumNonIrrigationSurfaceWaterAbstractionFractionData"
                             ],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         ),
                         1.0,
                     ),
@@ -316,7 +316,7 @@ class WaterManagement(object):
                         iniItems.waterManagementOptions[
                             "predefinedNonIrrigationSurfaceWaterAbstractionFractionData"
                         ],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     1.0,
                 ),
@@ -332,7 +332,7 @@ class WaterManagement(object):
     def get_allocation_zone(self, zonal_map_file_name):
         allocSegments = vos.readPCRmapClone(
             zonal_map_file_name,
-            self.inputDir,
+            absolutePath=self.inputDir,
             isLddMap=False,
             cover=None,
             isNomMap=True,
@@ -693,7 +693,7 @@ class WaterManagement(object):
                 desalinationWaterUse = pcr.ifthen(
                     self.landmask,
                     pcr.cover(
-                        vos.netcdf2PCRobjClone(
+                        vos.readPCRmapClone(
                             self.desalinationWaterFile,
                             "automatic",
                             currTimeStep.fulldate,
@@ -991,7 +991,7 @@ class WaterManagement(object):
             logger.debug("Total groundwater abstraction capped by pumping capacity")
             if currTimeStep.doy == 1 or currTimeStep.timeStepPCR == 1:
 
-                self.groundwater_pumping_region_ids = vos.netcdf2PCRobjClone(
+                self.groundwater_pumping_region_ids = vos.readPCRmapClone(
                     groundwater.pumpingCapacityNC,
                     "region_ids",
                     currTimeStep.fulldate,
@@ -1014,7 +1014,7 @@ class WaterManagement(object):
                 self.regionalAnnualGroundwaterAbstractionLimit = pcr.ifthen(
                     self.landmask,
                     pcr.cover(
-                        vos.netcdf2PCRobjClone(
+                        vos.readPCRmapClone(
                             groundwater.pumpingCapacityNC,
                             "regional_pumping_limit",
                             currTimeStep.fulldate,

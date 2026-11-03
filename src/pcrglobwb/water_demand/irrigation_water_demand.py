@@ -40,7 +40,7 @@ class IrrigationWaterDemand(object):
 
         self.cropDeplFactor = vos.readPCRmapClone(
             self.iniItemsIrrLC["cropDeplFactor"],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
 
         self.numberOfLayers = landCoverObject.numberOfLayers
@@ -76,14 +76,14 @@ class IrrigationWaterDemand(object):
         if self.ini_items_for_irrigation_efficiency.endswith(".map"):
             self.irrigationEfficiency = vos.readPCRmapClone(
                 self.ini_items_for_irrigation_efficiency,
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         # netCDF file
         elif "nc" in os.path.splitext(self.ini_items_for_irrigation_efficiency)[1]:
             try:
                 # netCDF file with a time dimension
                 ncFileIn = self.ini_items_for_irrigation_efficiency
-                self.irrigationEfficiency = vos.netcdf2PCRobjClone(
+                self.irrigationEfficiency = vos.readPCRmapClone(
                     ncFileIn,
                     "automatic",
                     currTimeStep,
@@ -96,7 +96,7 @@ class IrrigationWaterDemand(object):
                 logger.warning(f"{ncFileIn}: no time dimension, using constant values")
                 self.irrigationEfficiency = vos.readPCRmapClone(
                     self.ini_items_for_irrigation_efficiency,
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             # TODO: remove try/except
         else:

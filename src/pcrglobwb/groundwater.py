@@ -70,7 +70,7 @@ class Groundwater(object):
             logger.info("Reading baseflow_exponent from groundwaterOptions")
             self.baseflow_exponent = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["baseflow_exponent"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         else:
             self.baseflow_exponent = pcr.spatial(pcr.scalar(1.0))
@@ -124,10 +124,10 @@ class Groundwater(object):
         ] == "None" or "specificYield" in list(iniItems.groundwaterOptions.keys()):
             self.specificYield = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["specificYield"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         else:
-            self.specificYield = vos.netcdf2PCRobjClone(
+            self.specificYield = vos.readPCRmapClone(
                 groundwaterPropertiesNC, "specificYield", absolutePath=self.inputDir
             )
         self.specificYield = pcr.cover(self.specificYield, 0.0)
@@ -141,10 +141,10 @@ class Groundwater(object):
         ] == "None" or "kSatAquifer" in list(iniItems.groundwaterOptions.keys()):
             self.kSatAquifer = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["kSatAquifer"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         else:
-            self.kSatAquifer = vos.netcdf2PCRobjClone(
+            self.kSatAquifer = vos.readPCRmapClone(
                 groundwaterPropertiesNC, "kSatAquifer", absolutePath=self.inputDir
             )
         self.kSatAquifer = pcr.cover(self.kSatAquifer, 0.0)
@@ -156,7 +156,7 @@ class Groundwater(object):
                 self.recessionCoeff = None
             else:
                 logger.info(f"Reading recessionCoeff from {groundwaterPropertiesNC}")
-                self.recessionCoeff = vos.netcdf2PCRobjClone(
+                self.recessionCoeff = vos.readPCRmapClone(
                     groundwaterPropertiesNC,
                     "recessionCoeff",
                     absolutePath=self.inputDir,
@@ -171,7 +171,7 @@ class Groundwater(object):
             if iniItems.groundwaterOptions["recessionCoeff"] != "None":
                 self.recessionCoeff = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["recessionCoeff"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
 
         # calculate the recession coefficient from the given parameters
@@ -185,11 +185,11 @@ class Groundwater(object):
             if iniItems.landSurfaceOptions["topographyNC"] is None:
                 aquiferWidth = vos.readPCRmapClone(
                     iniItems.landSurfaceOptions["slopeLength"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 topoPropertiesNC = iniItems.landSurfaceOptions["topographyNC"]
-                aquiferWidth = vos.netcdf2PCRobjClone(
+                aquiferWidth = vos.readPCRmapClone(
                     topoPropertiesNC,
                     "slopeLength",
                     absolutePath=self.inputDir,
@@ -202,7 +202,7 @@ class Groundwater(object):
             # aquifer thickness (m) for the recession coefficient
             aquiferThicknessForRecessionCoeff = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["aquiferThicknessForRecessionCoeff"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             # recession coefficient (day-1)
@@ -217,7 +217,7 @@ class Groundwater(object):
             if iniItems.groundwaterOptions["recessionCoeff"] != "None":
                 self.recessionCoeff = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["recessionCoeff"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
 
         # minimum and maximum groundwater recession coefficient (day-1)
@@ -239,7 +239,7 @@ class Groundwater(object):
             if iniItems.groundwaterOptions["riverBedConductivity"] != "None":
                 self.riverBedConductivity = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["riverBedConductivity"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
 
         # total groundwater thickness (m), used to estimate the fossil groundwater capacity and the
@@ -253,7 +253,7 @@ class Groundwater(object):
 
             totalGroundwaterThickness = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["estimateOfTotalGroundwaterThickness"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             extrapolateGroundwaterThickness = True
@@ -326,7 +326,7 @@ class Groundwater(object):
                     iniItems.groundwaterOptions[
                         "minimumTransmissivityForProductiveAquifer"
                     ],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 self.productive_aquifer = pcr.cover(
                     pcr.ifthen(
@@ -360,7 +360,7 @@ class Groundwater(object):
                     iniItems.groundwaterOptions[
                         "estimateOfRenewableGroundwaterCapacity"
                     ],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 ),
                 0.0,
             )
@@ -491,13 +491,13 @@ class Groundwater(object):
             ):
                 self.storGroundwater = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["storGroundwaterIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 logger.info("Estimating initial storGroundwater from daily recharge")
                 daily_gw_recharge = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["dailyGroundwaterRechargeIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 daily_gw_recharge = pcr.max(
                     0.0, pcr.ifthen(self.landmask, pcr.cover(daily_gw_recharge, 0.0))
@@ -523,45 +523,45 @@ class Groundwater(object):
 
             self.avgAbstraction = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["avgTotalGroundwaterAbstractionIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgAllocation = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["avgTotalGroundwaterAllocationLongIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgAllocationShort = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["avgTotalGroundwaterAllocationShortIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgNonFossilAllocation = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["avgNonFossilGroundwaterAllocationLongIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgNonFossilAllocationShort = vos.readPCRmapClone(
                 iniItems.groundwaterOptions[
                     "avgNonFossilGroundwaterAllocationShortIni"
                 ],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             # additional initial conditions: relative groundwater head and baseflow
             if iniItems.groundwaterOptions["relativeGroundwaterHeadIni"] != "None":
                 self.relativeGroundwaterHead = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["relativeGroundwaterHeadIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 self.relativeGroundwaterHead = self.storGroundwater / self.specificYield
             self.baseflow = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["baseflowIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             # initial avgStorGroundwater (m), only relevant for a non-linear groundwater reservoir
             if "avgStorGroundwaterIni" in list(iniItems.groundwaterOptions.keys()):
                 self.avgStorGroundwater = vos.readPCRmapClone(
                     iniItems.groundwaterOptions["avgStorGroundwaterIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
             else:
                 logger.warning("No avgStorGroundwaterIni (non-linear reservoir only)")
@@ -570,7 +570,7 @@ class Groundwater(object):
 
             self.gwRecharge = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["gwRechargeIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
         # during/after spin-up
@@ -621,7 +621,7 @@ class Groundwater(object):
             )
             self.storGroundwaterFossil = vos.readPCRmapClone(
                 iniItems.groundwaterOptions["storGroundwaterFossilIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         if (
             iniItems.groundwaterOptions["storGroundwaterFossilIni"] != "Maximum"

@@ -19,8 +19,8 @@ class PCRGlobWB(object):
 
         self.lddMap = vos.readPCRmapClone(
             configuration.routingOptions["lddMap"],
-            configuration.globalOptions["inputDir"],
-            True,
+            absolutePath=configuration.globalOptions["inputDir"],
+            isLddMap=True,
         )
         # make sure the ldd map is correct and of type ldd
         self.lddMap = pcr.lddrepair(pcr.ldd(self.lddMap))
@@ -28,7 +28,7 @@ class PCRGlobWB(object):
         if configuration.globalOptions["landmask"] != "None":
             self.landmask = vos.readPCRmapClone(
                 configuration.globalOptions["landmask"],
-                configuration.globalOptions["inputDir"],
+                absolutePath=configuration.globalOptions["inputDir"],
             )
         else:
             self.landmask = pcr.defined(self.lddMap)

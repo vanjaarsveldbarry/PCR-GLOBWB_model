@@ -48,8 +48,8 @@ class LivestockWaterDemand(object):
                     self.livestockGrossDemand = pcr.max(
                         0.0,
                         pcr.cover(
-                            vos.netcdf2PCRobjClone(
-                                ncFile=self.livestockWaterDemandFile,
+                            vos.readPCRmapClone(
+                                v=self.livestockWaterDemandFile,
                                 varName="livestockGrossDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",
@@ -62,8 +62,8 @@ class LivestockWaterDemand(object):
                     self.livestockNettoDemand = pcr.max(
                         0.0,
                         pcr.cover(
-                            vos.netcdf2PCRobjClone(
-                                ncFile=self.livestockWaterDemandFile,
+                            vos.readPCRmapClone(
+                                v=self.livestockWaterDemandFile,
                                 varName="livestockNettoDemand",
                                 dateInput=currTimeStep.fulldate,
                                 useDoy="monthly",

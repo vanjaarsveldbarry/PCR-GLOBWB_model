@@ -162,8 +162,8 @@ class Routing(object):
 
         self.lddMap = vos.readPCRmapClone(
             iniItems.routingOptions["lddMap"],
-            self.inputDir,
-            True,
+            absolutePath=self.inputDir,
+            isLddMap=True,
         )
         self.lddMap = pcr.lddrepair(pcr.ldd(self.lddMap))
         self.lddMap = pcr.lddrepair(self.lddMap)
@@ -175,7 +175,7 @@ class Routing(object):
         if iniItems.globalOptions["landmask"] != "None":
             self.landmask = vos.readPCRmapClone(
                 iniItems.globalOptions["landmask"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
         else:
             self.landmask = pcr.defined(self.lddMap)
@@ -187,7 +187,7 @@ class Routing(object):
         # cell area (m2)
         self.cellArea = vos.readPCRmapClone(
             iniItems.routingOptions["cellAreaMap"],
-            self.inputDir,
+            absolutePath=self.inputDir,
         )
 
         # model resolution (arc-degree)
@@ -202,7 +202,7 @@ class Routing(object):
         routingParameters = ["gradient", "manningsN"]
         for var in routingParameters:
             input = iniItems.routingOptions[str(var)]
-            vars(self)[var] = vos.readPCRmapClone(input, self.inputDir)
+            vars(self)[var] = vos.readPCRmapClone(input, absolutePath=self.inputDir)
 
         # parameters to estimate the channel dimensions (used in getRoutingParamAvgDischarge)
         self.eta = 0.25
@@ -217,7 +217,7 @@ class Routing(object):
                 self.minChannelWidth = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["minimumChannelWidth"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     0.0,
                 )
@@ -229,7 +229,7 @@ class Routing(object):
                 self.predefinedChannelWidth = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["constantChannelWidth"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     0.0,
                 )
@@ -241,7 +241,7 @@ class Routing(object):
                 self.predefinedChannelDepth = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["constantChannelDepth"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     0.0,
                 )
@@ -262,7 +262,7 @@ class Routing(object):
                 self.channelLength = pcr.cover(
                     vos.readPCRmapClone(
                         iniItems.routingOptions["channelLength"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     ),
                     self.channelLength,
                 )
@@ -345,7 +345,7 @@ class Routing(object):
 
             # Manning's n of the floodplain areas
             input = iniItems.routingOptions["floodplainManningsN"]
-            self.floodplainManN = vos.readPCRmapClone(input, self.inputDir)
+            self.floodplainManN = vos.readPCRmapClone(input, absolutePath=self.inputDir)
 
             # reduction parameter of the smoothing interval and error threshold
             self.reductionKK = 0.5
@@ -373,7 +373,7 @@ class Routing(object):
                 self.usingFixedBankfullCapacity = True
                 self.predefinedBankfullCapacity = vos.readPCRmapClone(
                     iniItems.routingOptions["bankfullCapacity"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 self.predefinedBankfullCapacity = pcr.cover(
                     self.predefinedBankfullCapacity, pcr.spatial(pcr.scalar(0.0))
@@ -401,7 +401,7 @@ class Routing(object):
         if "maxFloodDepth" in list(iniItems.routingOptions.keys()):
             self.maxFloodDepth = vos.readPCRmapClone(
                 iniItems.routingOptions["maxFloodDepth"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
         # input file for upstream discharge (from upstream basins)
@@ -502,7 +502,7 @@ class Routing(object):
             # salinity: background TDS concentration (mg/L)
             self.backgroundSalinityNC = iniItems.routingOptions["backgroundSalinity"]
             # (mg/L)
-            self.backgroundSalinity = vos.netcdf2PCRobjClone(
+            self.backgroundSalinity = vos.readPCRmapClone(
                 self.backgroundSalinityNC, "bgTDS", absolutePath=self.inputDir
             )
 
@@ -513,7 +513,7 @@ class Routing(object):
 
             # dissolved oxygen: elevation data
             self.elevation_path = iniItems.landSurfaceOptions["topographyNC"]
-            self.elevation = vos.netcdf2PCRobjClone(
+            self.elevation = vos.readPCRmapClone(
                 self.elevation_path, "dem_average", absolutePath=self.inputDir
             )
 
@@ -526,7 +526,7 @@ class Routing(object):
             # solar radiation dependent decay: total suspended solids (Beusen et al., 2005)
             self.tss = vos.readPCRmapClone(
                 iniItems.routingOptions["TSSmap"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             # (m2/W; Reder et al., 2015)
             self.sunlightinactivation_FC = pcr.scalar(0.0068)
@@ -595,30 +595,30 @@ class Routing(object):
                 # average (regional) excretion rates
                 self.Dom_ExcrLoadNC = iniItems.routingOptions["Dom_ExcrLoadNC"]
                 # (g/capita/day)
-                self.DomTDS_ExcrLoad = vos.netcdf2PCRobjClone(
+                self.DomTDS_ExcrLoad = vos.readPCRmapClone(
                     self.Dom_ExcrLoadNC, "Dom_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (g/capita/day)
-                self.DomBOD_ExcrLoad = vos.netcdf2PCRobjClone(
+                self.DomBOD_ExcrLoad = vos.readPCRmapClone(
                     self.Dom_ExcrLoadNC, "Dom_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/capita/day)
-                self.DomFC_ExcrLoad = vos.netcdf2PCRobjClone(
+                self.DomFC_ExcrLoad = vos.readPCRmapClone(
                     self.Dom_ExcrLoadNC, "Dom_Fixed_FCload", absolutePath=self.inputDir
                 )
 
                 # manufacturing: average (regional) effluent concentrations
                 self.Man_EfflConcNC = iniItems.routingOptions["Man_EfflConcNC"]
                 # (mg/L, i.e. g/m3)
-                self.ManTDS_EfflConc = vos.netcdf2PCRobjClone(
+                self.ManTDS_EfflConc = vos.readPCRmapClone(
                     self.Man_EfflConcNC, "Man_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
-                self.ManBOD_EfflConc = vos.netcdf2PCRobjClone(
+                self.ManBOD_EfflConc = vos.readPCRmapClone(
                     self.Man_EfflConcNC, "Man_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/100mL)
-                self.ManFC_EfflConc = vos.netcdf2PCRobjClone(
+                self.ManFC_EfflConc = vos.readPCRmapClone(
                     self.Man_EfflConcNC, "Man_Fixed_FCload", absolutePath=self.inputDir
                 )
 
@@ -627,15 +627,15 @@ class Routing(object):
                 # average (regional) effluent concentrations
                 self.USR_EfflConcNC = iniItems.routingOptions["USR_EfflConcNC"]
                 # (mg/L, i.e. g/m3)
-                self.USRTDS_EfflConc = vos.netcdf2PCRobjClone(
+                self.USRTDS_EfflConc = vos.readPCRmapClone(
                     self.USR_EfflConcNC, "USR_Fixed_TDSload", absolutePath=self.inputDir
                 )
                 # (mg/L, i.e. g/m3)
-                self.USRBOD_EfflConc = vos.netcdf2PCRobjClone(
+                self.USRBOD_EfflConc = vos.readPCRmapClone(
                     self.USR_EfflConcNC, "USR_Fixed_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/100mL)
-                self.USRFC_EfflConc = vos.netcdf2PCRobjClone(
+                self.USRFC_EfflConc = vos.readPCRmapClone(
                     self.USR_EfflConcNC, "USR_Fixed_FCload", absolutePath=self.inputDir
                 )
 
@@ -644,74 +644,74 @@ class Routing(object):
                 # average (regional) excretion rates
                 self.Liv_ExcrLoadNC = iniItems.routingOptions["Liv_ExcrLoadNC"]
                 # (g/stock/day)
-                self.Bufallo_BODload = vos.netcdf2PCRobjClone(
+                self.Bufallo_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "bufallo_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Chicken_BODload = vos.netcdf2PCRobjClone(
+                self.Chicken_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "chicken_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Cow_BODload = vos.netcdf2PCRobjClone(
+                self.Cow_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "cow_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Duck_BODload = vos.netcdf2PCRobjClone(
+                self.Duck_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "duck_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Goat_BODload = vos.netcdf2PCRobjClone(
+                self.Goat_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "goat_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Horse_BODload = vos.netcdf2PCRobjClone(
+                self.Horse_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "horse_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Pig_BODload = vos.netcdf2PCRobjClone(
+                self.Pig_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "pig_BODload", absolutePath=self.inputDir
                 )
                 # (g/stock/day)
-                self.Sheep_BODload = vos.netcdf2PCRobjClone(
+                self.Sheep_BODload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "sheep_BODload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Bufallo_FCload = vos.netcdf2PCRobjClone(
+                self.Bufallo_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "bufallo_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Chicken_FCload = vos.netcdf2PCRobjClone(
+                self.Chicken_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "chicken_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Cow_FCload = vos.netcdf2PCRobjClone(
+                self.Cow_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "cow_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Duck_FCload = vos.netcdf2PCRobjClone(
+                self.Duck_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "duck_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Goat_FCload = vos.netcdf2PCRobjClone(
+                self.Goat_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "goat_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Horse_FCload = vos.netcdf2PCRobjClone(
+                self.Horse_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "horse_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Pig_FCload = vos.netcdf2PCRobjClone(
+                self.Pig_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "pig_FCload", absolutePath=self.inputDir
                 )
                 # (cfu/stock/day)
-                self.Sheep_FCload = vos.netcdf2PCRobjClone(
+                self.Sheep_FCload = vos.readPCRmapClone(
                     self.Liv_ExcrLoadNC, "sheep_FCload", absolutePath=self.inputDir
                 )
 
                 # irrigation: soil concentration averaged over the topsoil and subsoil
                 self.Irr_EfflConcNC = iniItems.routingOptions["Irr_EfflConcNC"]
                 # (mg/L)
-                self.IrrTDS_EfflConc = vos.netcdf2PCRobjClone(
+                self.IrrTDS_EfflConc = vos.readPCRmapClone(
                     self.Irr_EfflConcNC, "soil_TDS", absolutePath=self.inputDir
                 )
 
@@ -746,168 +746,168 @@ class Routing(object):
             # read the initial conditions from the PCRaster maps in the ini file (at the start of the model)
             self.timestepsToAvgDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["timestepsToAvgDischargeIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             self.channelStorage = vos.readPCRmapClone(
                 iniItems.routingOptions["channelStorageIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.readAvlChannelStorage = vos.readPCRmapClone(
                 iniItems.routingOptions["readAvlChannelStorageIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["avgDischargeLongIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.m2tDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["m2tDischargeLongIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgBaseflow = vos.readPCRmapClone(
                 iniItems.routingOptions["avgBaseflowLongIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.riverbedExchange = vos.readPCRmapClone(
                 iniItems.routingOptions["riverbedExchangeIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             # initial condition introduced in version 2.0.2: avgDischargeShort
             self.avgDischargeShort = vos.readPCRmapClone(
                 iniItems.routingOptions["avgDischargeShortIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             # initial conditions needed for the kinematic wave methods
             self.subDischarge = vos.readPCRmapClone(
                 iniItems.routingOptions["subDischargeIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
 
             # initial conditions needed for coupling with QUAlloc
             if self.using_qualloc:
                 self.discharge = vos.readPCRmapClone(
                     iniItems.routingOptions["dischargeIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 self.runoff = vos.readPCRmapClone(
                     iniItems.routingOptions["runoffIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
 
                 if self.quality:
                     # salinity pollution
                     self.salinity = vos.readPCRmapClone(
                         iniItems.routingOptions["salinityIni"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     )
                     # organic pollution
                     self.organic = vos.readPCRmapClone(
                         iniItems.routingOptions["organicIni"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     )
                     # pathogen pollution
                     self.pathogen = vos.readPCRmapClone(
                         iniItems.routingOptions["pathogenIni"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     )
 
             # initial conditions needed for the water quality module
             if self.quality:
                 self.waterTemp = vos.readPCRmapClone(
                     iniItems.routingOptions["waterTemperatureIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 self.iceThickness = vos.readPCRmapClone(
                     iniItems.routingOptions["iceThicknessIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 # salinity pollution
                 self.routedTDS = vos.readPCRmapClone(
                     iniItems.routingOptions["routedTDSIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 # organic pollution
                 self.routedBOD = vos.readPCRmapClone(
                     iniItems.routingOptions["routedBODIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 # pathogen pollution
                 self.routedFC = vos.readPCRmapClone(
                     iniItems.routingOptions["routedFCIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
 
                 # initial average irrigation demand and net liquid water to the soil, for the irrigation return flows
                 if self.calculateLoads and not self.offlineRun:
                     self.avg_irrGrossDemand = vos.readPCRmapClone(
                         iniItems.routingOptions["avg_irrGrossDemandIni"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     )
                     self.avg_netLqWaterToSoil = vos.readPCRmapClone(
                         iniItems.routingOptions["avg_netLqWaterToSoilIni"],
-                        self.inputDir,
+                        absolutePath=self.inputDir,
                     )
 
                     # per water quality sector
                     if self.loadsPerSector:
                         self.routedDomTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedDomTDSIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedDomBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedDomBODIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedDomFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedDomFCIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedManTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedManTDSIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedManBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedManBODIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedManFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedManFCIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedUSRTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedUSRTDSIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedUSRBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedUSRBODIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedUSRFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedUSRFCIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedintLivBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedintLivBODIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedintLivFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedintLivFCIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedextLivBOD = vos.readPCRmapClone(
                             iniItems.routingOptions["routedextLivBODIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedextLivFC = vos.readPCRmapClone(
                             iniItems.routingOptions["routedextLivFCIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
                         self.routedIrrTDS = vos.readPCRmapClone(
                             iniItems.routingOptions["routedIrrTDSIni"],
-                            self.inputDir,
+                            absolutePath=self.inputDir,
                         )
 
         else:
@@ -1108,16 +1108,16 @@ class Routing(object):
             # read the initial conditions from the PCRaster maps in the ini file (at the start of the model)
             self.avgInflow = vos.readPCRmapClone(
                 iniItems.routingOptions["avgLakeReservoirInflowShortIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             self.avgOutflow = vos.readPCRmapClone(
                 iniItems.routingOptions["avgLakeReservoirOutflowLongIni"],
-                self.inputDir,
+                absolutePath=self.inputDir,
             )
             if iniItems.routingOptions["waterBodyStorageIni"] is not None:
                 self.waterBodyStorage = vos.readPCRmapClone(
                     iniItems.routingOptions["waterBodyStorageIni"],
-                    self.inputDir,
+                    absolutePath=self.inputDir,
                 )
                 self.waterBodyStorage = pcr.ifthen(
                     self.landmask, pcr.cover(self.waterBodyStorage, 0.0)
@@ -1191,7 +1191,7 @@ class Routing(object):
 
             if relativeElevationFileNC is None:
                 inputName = relZFileName % (areaFractions[iCnt] * 100)
-                relZ[iCnt] = vos.readPCRmapClone(inputName, self.inputDir)
+                relZ[iCnt] = vos.readPCRmapClone(inputName, absolutePath=self.inputDir)
             if relativeElevationFileNC is not None:
                 # TODO: use a netCDF file
                 pass
@@ -1841,7 +1841,7 @@ class Routing(object):
         if (
             (currTimeStep.day == 1) or (currTimeStep.timeStepPCR == 1)
         ) and self.no_zero_crop_water_coefficient:
-            waterKC = vos.netcdf2PCRobjClone(
+            waterKC = vos.readPCRmapClone(
                 self.fileCropKC,
                 "kc",
                 currTimeStep.fulldate,
@@ -1961,7 +1961,7 @@ class Routing(object):
         # wastewater treatment plants: ids
         if currTimeStep.doy == 1:
             # wastewater treatment plant (point) locations
-            self.WWt_plantID = vos.netcdf2PCRobjClone(
+            self.WWt_plantID = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "plant_id",
                 str(currTimeStep.fulldate),
@@ -1973,7 +1973,7 @@ class Routing(object):
             self.WWt_plantID = pcr.nominal(self.WWt_plantID)
 
             # wastewater treatment plant service zones
-            self.WWt_zoneID = vos.netcdf2PCRobjClone(
+            self.WWt_zoneID = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "zone_id",
                 str(currTimeStep.fulldate),
@@ -3209,7 +3209,7 @@ class Routing(object):
     def readExtensiveMeteo(self, currTimeStep):
         # read the meteorological input directly from netCDF files
         if currTimeStep.day == 1:
-            self.cloudCover = vos.netcdf2PCRobjClone(
+            self.cloudCover = vos.readPCRmapClone(
                 self.cloudFileNC,
                 "cld",
                 str(currTimeStep.fulldate),
@@ -3219,7 +3219,7 @@ class Routing(object):
                 absolutePath=self.inputDir,
             ) / pcr.scalar(100)
 
-            self.vaporPressure = vos.netcdf2PCRobjClone(
+            self.vaporPressure = vos.readPCRmapClone(
                 self.vapFileNC,
                 "vap",
                 str(currTimeStep.fulldate),
@@ -3229,7 +3229,7 @@ class Routing(object):
                 absolutePath=self.inputDir,
             )
 
-            self.annualT = vos.netcdf2PCRobjClone(
+            self.annualT = vos.readPCRmapClone(
                 self.annualTFileNC,
                 "tas",
                 str(currTimeStep.fulldate),
@@ -3239,7 +3239,7 @@ class Routing(object):
                 absolutePath=self.inputDir,
             ) + pcr.scalar(273.15)
 
-        self.radiation = vos.netcdf2PCRobjClone(
+        self.radiation = vos.readPCRmapClone(
             self.radFileNC,
             "rsds",
             str(currTimeStep.fulldate),
@@ -3264,7 +3264,7 @@ class Routing(object):
 
         if currTimeStep.doy == 1:
             # domestic: gridded population (5 arcmin)
-            self.Population = vos.netcdf2PCRobjClone(
+            self.Population = vos.readPCRmapClone(
                 self.PopulationNC,
                 "Population",
                 str(currTimeStep.fulldate),
@@ -3275,7 +3275,7 @@ class Routing(object):
             )
 
             # urban surface runoff: urban fraction (0-1)
-            self.urban_area_fraction = vos.netcdf2PCRobjClone(
+            self.urban_area_fraction = vos.readPCRmapClone(
                 self.UrbanFractionNC,
                 "urban_fraction",
                 str(currTimeStep.fulldate),
@@ -3288,7 +3288,7 @@ class Routing(object):
             self.urban_area_fraction = pcr.cover(self.urban_area_fraction, 0)
 
             # livestock populations (5 arcmin): buffalo
-            self.BufalloPopulation = vos.netcdf2PCRobjClone(
+            self.BufalloPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "BufalloPop",
                 str(currTimeStep.fulldate),
@@ -3300,7 +3300,7 @@ class Routing(object):
             self.BufalloPopulation = pcr.cover(self.BufalloPopulation, 0.0)
 
             # chicken
-            self.ChickenPopulation = vos.netcdf2PCRobjClone(
+            self.ChickenPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "ChickenPop",
                 str(currTimeStep.fulldate),
@@ -3312,7 +3312,7 @@ class Routing(object):
             self.ChickenPopulation = pcr.cover(self.ChickenPopulation, 0.0)
 
             # cow
-            self.CowPopulation = vos.netcdf2PCRobjClone(
+            self.CowPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "CowPop",
                 str(currTimeStep.fulldate),
@@ -3324,7 +3324,7 @@ class Routing(object):
             self.CowPopulation = pcr.cover(self.CowPopulation, 0.0)
 
             # duck
-            self.DuckPopulation = vos.netcdf2PCRobjClone(
+            self.DuckPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "DuckPop",
                 str(currTimeStep.fulldate),
@@ -3336,7 +3336,7 @@ class Routing(object):
             self.DuckPopulation = pcr.cover(self.DuckPopulation, 0.0)
 
             # goat
-            self.GoatPopulation = vos.netcdf2PCRobjClone(
+            self.GoatPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "GoatPop",
                 str(currTimeStep.fulldate),
@@ -3348,7 +3348,7 @@ class Routing(object):
             self.GoatPopulation = pcr.cover(self.GoatPopulation, 0.0)
 
             # horse
-            self.HorsePopulation = vos.netcdf2PCRobjClone(
+            self.HorsePopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "HorsePop",
                 str(currTimeStep.fulldate),
@@ -3360,7 +3360,7 @@ class Routing(object):
             self.HorsePopulation = pcr.cover(self.HorsePopulation, 0.0)
 
             # pig
-            self.PigPopulation = vos.netcdf2PCRobjClone(
+            self.PigPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "PigPop",
                 str(currTimeStep.fulldate),
@@ -3372,7 +3372,7 @@ class Routing(object):
             self.PigPopulation = pcr.cover(self.PigPopulation, 0.0)
 
             # sheep
-            self.SheepPopulation = vos.netcdf2PCRobjClone(
+            self.SheepPopulation = vos.readPCRmapClone(
                 self.LivPopulationNC,
                 "SheepPop",
                 str(currTimeStep.fulldate),
@@ -3397,7 +3397,7 @@ class Routing(object):
             self.SheepDensity = (self.SheepPopulation * 0.1) / self.cellArea_km2
 
             # wastewater treatment: fraction of wastewater that is collected and treated
-            self.WWt_ct = vos.netcdf2PCRobjClone(
+            self.WWt_ct = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "WW_ct",
                 str(currTimeStep.fulldate),
@@ -3408,7 +3408,7 @@ class Routing(object):
             )
 
             # country-level fraction of uncollected wastewater with basic sanitation
-            self.WWt_bs = vos.netcdf2PCRobjClone(
+            self.WWt_bs = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "WW_bs",
                 str(currTimeStep.fulldate),
@@ -3419,7 +3419,7 @@ class Routing(object):
             )
 
             # country-level fraction of uncollected wastewater that is open defecation
-            self.WWt_od = vos.netcdf2PCRobjClone(
+            self.WWt_od = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "WW_od",
                 str(currTimeStep.fulldate),
@@ -3430,7 +3430,7 @@ class Routing(object):
             )
 
             # fraction of TDS removed at each wastewater treatment plant
-            self.WWt_TDS_removal = vos.netcdf2PCRobjClone(
+            self.WWt_TDS_removal = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "TDS_removal",
                 str(currTimeStep.fulldate),
@@ -3441,7 +3441,7 @@ class Routing(object):
             )
 
             # fraction of BOD removed at each wastewater treatment plant
-            self.WWt_BOD_removal = vos.netcdf2PCRobjClone(
+            self.WWt_BOD_removal = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "BOD_removal",
                 str(currTimeStep.fulldate),
@@ -3452,7 +3452,7 @@ class Routing(object):
             )
 
             # fraction of FC removed at each wastewater treatment plant
-            self.WWt_FC_removal = vos.netcdf2PCRobjClone(
+            self.WWt_FC_removal = vos.readPCRmapClone(
                 self.WWtPlantsNC,
                 "FC_removal",
                 str(currTimeStep.fulldate),
@@ -3967,7 +3967,7 @@ class Routing(object):
         logger.info("Reading loadings directly")
 
         # TDS loadings (all sectors combined)
-        self.TDSload = vos.netcdf2PCRobjClone(
+        self.TDSload = vos.readPCRmapClone(
             self.TDSloadNC,
             "TDSload",
             str(currTimeStep.fulldate),
@@ -3978,7 +3978,7 @@ class Routing(object):
         self.TDSload = pcr.ifthen(self.landmask, self.TDSload)
 
         # BOD loadings (all sectors combined)
-        self.BODload = vos.netcdf2PCRobjClone(
+        self.BODload = vos.readPCRmapClone(
             self.BODloadNC,
             "BODload",
             str(currTimeStep.fulldate),
@@ -3989,7 +3989,7 @@ class Routing(object):
         self.BODload = pcr.ifthen(self.landmask, self.BODload)
 
         # FC loadings (all sectors combined)
-        self.FCload = vos.netcdf2PCRobjClone(
+        self.FCload = vos.readPCRmapClone(
             self.FCloadNC,
             "FCload",
             str(currTimeStep.fulldate),

@@ -31,7 +31,7 @@ smallNumber = 1e-39
 pi = math.pi
 
 # netCDF file suffixes that can be used
-netcdf_suffixes = (".nc4", ".nc")
+netcdf_suffixes = (".nc4", ".nc", ".nc3")
 
 # maximum number of tries for reading files
 max_num_of_tries = 6
@@ -448,19 +448,14 @@ def checkVariableInNC(ncFile, varName):
     return varName in list(f.variables.keys())
 
 
-@retry
-def netcdf2PCRobjClone(
+def _readNetcdf(
     ncFile,
-    varName="automatic",
-    dateInput=None,
-    useDoy=None,
-    LatitudeLongitude=True,
-    specificFillValue=None,
-    absolutePath=None,
+    varName,
+    dateInput,
+    useDoy,
+    LatitudeLongitude,
+    specificFillValue,
 ):
-
-    if absolutePath is not None:
-        ncFile = utils.getFullPath(ncFile, absolutePath)
 
     # EHS (19 Apr 2013): convert a netCDF (tss) file to a PCRaster map with clone checking;
     # only works for square cells and if cellsizeClone <= cellsizeInput
@@ -729,6 +724,11 @@ def writePCRmapToDir(v, outFileName, outDir):
 @retry
 def readPCRmapClone(
     v,
+    varName="automatic",
+    dateInput=None,
+    useDoy=None,
+    LatitudeLongitude=True,
+    specificFillValue=None,
     absolutePath=None,
     isLddMap=False,
     cover=None,
@@ -736,7 +736,19 @@ def readPCRmapClone(
 ):
     # v: input map file name or value; if the input map and the clone have different
     # grids, the map is resampled
+    # varName, dateInput, useDoy, LatitudeLongitude and specificFillValue require
+    # netCDF input
     logger.debug(f"read file/value: {v}")
+
+    this_is_a_netcdf_file = v.endswith(netcdf_suffixes)
+    if not this_is_a_netcdf_file and (
+        varName != "automatic"
+        or dateInput is not None
+        or useDoy is not None
+        or not LatitudeLongitude
+        or specificFillValue is not None
+    ):
+        raise ValueError(f"{v} is not a netCDF file but netCDF options were given")
 
     if v == "None":
 
@@ -746,15 +758,13 @@ def readPCRmapClone(
         if absolutePath is not None:
             v = utils.getFullPath(v, absolutePath)
 
-        this_is_a_netcdf_file = False
-        if v.endswith(".nc") or v.endswith(".nc4"):
-            this_is_a_netcdf_file = True
-
         if this_is_a_netcdf_file:
 
             logger.debug(f"read netcdf file: {v}")
 
-            PCRmap = netcdf2PCRobjClone(ncFile=v)
+            PCRmap = _readNetcdf(
+                v, varName, dateInput, useDoy, LatitudeLongitude, specificFillValue
+            )
 
         else:
 

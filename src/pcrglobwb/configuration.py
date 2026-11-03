@@ -37,14 +37,6 @@ INI_PLACEHOLDER_FLAGS = {
     "ESTIMATE_STOR_GROUNDWATER_INI_FROM_RECHARGE": "--est_stor_gw_from_rch",
     "DAILY_GROUNDWATER_RECHARGE_INI": "--day_gw_rch_ini",
     "QUALLOC_CONFIG_FILE": "--qcf",
-    "MIN_SOIL_DEPTH_FRAC_MULTIPLIER": "--min_soil_depth_frac_mult",
-    "KSAT_LOG10_MULTIPLIER": "--ksat_log10_mult",
-    "RECESSION_COEFF_LOG10_MULTIPLIER": "--recession_coeff_log10_mult",
-    "STOR_CAP_MULTIPLIER": "--stor_cap_mult",
-    "DEGREE_DAY_FACTOR_MULTIPLIER": "--degree_day_factor_mult",
-    "REF_POT_ET_MULTIPLIER": "--ref_pot_et_mult",
-    "MANNINGS_N_MULTIPLIER": "--mannings_n_mult",
-    "STOR_GROUNDWATER_INI_FILE": "--stor_groundwater_ini_file",
 }
 
 placeholder_pattern = re.compile(rf"\b({'|'.join(INI_PLACEHOLDER_FLAGS)})\b")

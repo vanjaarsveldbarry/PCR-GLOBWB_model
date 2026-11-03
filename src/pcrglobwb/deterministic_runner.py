@@ -11,6 +11,7 @@ from pcrglobwb.configuration import Configuration
 from pcrglobwb.pcrglobwb import PCRGlobWB
 from pcrglobwb.reporting import Reporting
 from pcrglobwb.spinUp import SpinUp
+from pcrglobwb.water_balance import WaterBalance
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,10 @@ class DeterministicRunner(DynamicModel):
 
         self.modelTime = modelTime
         self.model = PCRGlobWB(configuration, modelTime, initialState)
-        self.reporting = Reporting(configuration, self.model, modelTime)
+        self.water_balance = WaterBalance(self.model, modelTime)
+        self.reporting = Reporting(
+            configuration, self.model, modelTime, self.water_balance
+        )
 
     def initial(self):
         pass
@@ -34,8 +38,9 @@ class DeterministicRunner(DynamicModel):
 
         # update the model (uses the current model time)
 
-        self.model.read_forcings()
-        self.model.update(report_water_balance=True)
+        self.water_balance.begin_step()
+        self.model.update()
+        self.water_balance.end_step()
 
         self.reporting.report()
 
@@ -63,14 +68,12 @@ def spin_up(configuration, model_time):
         logger.info(f"Spin-Up Run No. {cycle}")
         runner = DeterministicRunner(configuration, model_time, state)
 
-        # getAllState adds the grid totals the convergence check needs;
-        # getState is what the next run restarts from
-        all_state_begin = runner.model.getAllState()
+        storages_begin = convergence.storages(runner.model)
         run_framework(runner)
-        all_state_end = runner.model.getAllState()
+        storages_end = convergence.storages(runner.model)
 
         has_converged = convergence.checkConvergence(
-            all_state_begin, all_state_end, cycle, runner.model.routing.cellArea
+            storages_begin, storages_end, cycle, runner.model.routing.cellArea
         )
         convergence.archive_netcdf_output()
 

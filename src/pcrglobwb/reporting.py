@@ -13,11 +13,12 @@ logger = logging.getLogger(__name__)
 
 class Reporting(object):
 
-    def __init__(self, configuration, model, modelTime):
+    def __init__(self, configuration, model, modelTime, water_balance):
 
         # model (e.g. PCR-GLOBWB) and model time object
         self._model = model
         self._modelTime = modelTime
+        self._water_balance = water_balance
 
         self.configuration = configuration
 
@@ -706,7 +707,7 @@ class Reporting(object):
 
         # water balance of the land surface (excluding surface water bodies)
         if "land_surface_water_balance" in self.variables_for_report:
-            self.land_surface_water_balance = self._model.waterBalance
+            self.land_surface_water_balance = self._water_balance.waterBalance
 
         # accumulated directRunoff along the drainage network (m3/s)
         if "accuDirectRunoff" in self.variables_for_report:
@@ -1253,7 +1254,65 @@ class Reporting(object):
                 self.groundwaterVolumeEstimate, self._model.routing.lddMap
             )
 
+    def dumpState(self, outputDirectory):
+        # write all states to disk to allow restarting
+
+        specific_date_string = str(self._modelTime.fulldate)
+
+        state = self._model.getState()
+
+        meteoState = state["meteo"]
+        for variable, map in list(meteoState.items()):
+            vos.writePCRmapToDir(
+                map,
+                f"{variable}_{specific_date_string}.map",
+                outputDirectory,
+            )
+
+        landSurfaceState = state["landSurface"]
+        for coverType, coverTypeState in list(landSurfaceState.items()):
+            for variable, map in list(coverTypeState.items()):
+                vos.writePCRmapToDir(
+                    map,
+                    f"{variable}_{coverType}_{specific_date_string}.map",
+                    outputDirectory,
+                )
+
+        groundWaterState = state["groundwater"]
+        for variable, map in list(groundWaterState.items()):
+            vos.writePCRmapToDir(
+                map,
+                f"{variable}_{specific_date_string}.map",
+                outputDirectory,
+            )
+
+        routingState = state["routing"]
+        for variable, map in list(routingState.items()):
+            vos.writePCRmapToDir(
+                map,
+                f"{variable}_{specific_date_string}.map",
+                outputDirectory,
+            )
+
+    def save_states(self):
+        save_monthly_end_states = (
+            self.configuration.reportingOptions.get("save_monthly_end_states") == "True"
+        )
+        if (
+            self._modelTime.isLastDayOfYear()
+            or self._modelTime.isLastTimeStep()
+            or (self._modelTime.isLastDayOfMonth() and save_monthly_end_states)
+        ):
+            logger.info(
+                "Saving/dumping states to pcraster maps for time %s to the directory %s",
+                self._modelTime,
+                self.configuration.endStateDir,
+            )
+            self.dumpState(self.configuration.endStateDir)
+
     def report(self):
+        self.save_states()
+
         self.post_processing()
 
         # time stamp for reporting

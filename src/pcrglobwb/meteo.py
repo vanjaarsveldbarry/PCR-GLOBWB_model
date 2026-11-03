@@ -31,11 +31,6 @@ class Meteo(object):
 
         return result
 
-    def getPseudoState(self):
-        result = {}
-
-        return result
-
     def getICs(self, iniItems, iniConditions=None):
 
         self.initialize_states(iniItems, iniConditions)
@@ -496,6 +491,8 @@ class Meteo(object):
                 )
 
     def update(self, routing, currTimeStep):
+
+        self.read_forcings(currTimeStep)
 
         self.precipitation_before_downscaling = pcr.ifthen(
             self.landmask, self.precipitation

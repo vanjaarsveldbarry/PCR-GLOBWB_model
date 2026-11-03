@@ -45,8 +45,10 @@ class SpinUp(object):
 
         # TODO: including the convergence of ResvSto (reservoir storage)
 
-        # directory for end states (PCRaster maps)
-        self.endStateDir = iniItems.endStateDir
+    def storages(self, model):
+        state = model.getState()
+        state["landSurface"].update(model.landSurface.getPseudoState())
+        return state
 
     def soilStorageVolume(self, state, cellAreaMap):
 

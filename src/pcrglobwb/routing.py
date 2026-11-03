@@ -16,10 +16,6 @@ logger = logging.getLogger(__name__)
 
 class Routing(object):
 
-    def getPseudoState(self):
-        result = {}
-        return result
-
     def getState(self):
         result = {}
 

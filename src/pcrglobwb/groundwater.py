@@ -46,11 +46,6 @@ class Groundwater(object):
 
         return result
 
-    def getPseudoState(self):
-        result = {}
-
-        return result
-
     def __init__(self, iniItems, landmask, spinUp):
         object.__init__(self)
 

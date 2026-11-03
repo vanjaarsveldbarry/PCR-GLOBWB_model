@@ -40,6 +40,62 @@ class DeterministicRunner(DynamicModel):
         self.reporting.report()
 
 
+def run_framework(runner):
+    framework = DynamicFramework(runner, runner.modelTime.nrOfTimeSteps)
+    framework.setQuiet(True)
+    framework.run()
+
+
+def spin_up(configuration, model_time):
+    max_cycles = int(configuration.globalOptions["maxSpinUpsInYears"])
+    if max_cycles <= 0:
+        return None
+
+    logger.info(f"Spin-Up #Total Years: {max_cycles}")
+
+    convergence = SpinUp(configuration)
+    state = None
+
+    for cycle in range(1, max_cycles + 1):
+        model_time.setSpinUpCycle(
+            configuration.globalOptions["startTime"], cycle, max_cycles
+        )
+        logger.info(f"Spin-Up Run No. {cycle}")
+        runner = DeterministicRunner(configuration, model_time, state)
+
+        # getAllState adds the grid totals the convergence check needs;
+        # getState is what the next run restarts from
+        all_state_begin = runner.model.getAllState()
+        run_framework(runner)
+        all_state_end = runner.model.getAllState()
+
+        has_converged = convergence.checkConvergence(
+            all_state_begin, all_state_end, cycle, runner.model.routing.cellArea
+        )
+        convergence.archive_netcdf_output()
+
+        state = runner.model.getState()
+
+        if has_converged:
+            return state
+
+    logger.warning(f"Spin-up did not converge after {max_cycles} cycles.")
+    return state
+
+
+def run(configuration):
+    model_time = ModelTime()
+
+    initial_state = spin_up(configuration, model_time)
+
+    model_time.setTransientPeriod(
+        configuration.globalOptions["startTime"], configuration.globalOptions["endTime"]
+    )
+    logger.info("Transient simulation run started.")
+    runner = DeterministicRunner(configuration, model_time, initial_state)
+    run_framework(runner)
+
+
 def parse_arguments(argv):
     parser = argparse.ArgumentParser(
         description="Run PCR-GLOBWB from an ini file.", allow_abbrev=False
@@ -62,64 +118,8 @@ def main(argv=None):
     )
     configuration.set_configuration()
 
-    # time step info: year, month, day, doy, etc.
-    currTimeStep = ModelTime()
-
-    spin_up = SpinUp(configuration)
-
-    # spin-up
-    noSpinUps = int(configuration.globalOptions["maxSpinUpsInYears"])
-    initial_state = None
-    if noSpinUps > 0:
-
-        logger.info(f"Spin-Up #Total Years: {noSpinUps}")
-
-        spinUpRun = 0
-        has_converged = False
-        while spinUpRun < noSpinUps and not has_converged:
-            spinUpRun += 1
-            currTimeStep.getStartEndTimeStepsForSpinUp(
-                configuration.globalOptions["startTime"], spinUpRun, noSpinUps
-            )
-            logger.info(f"Spin-Up Run No. {spinUpRun}")
-            deterministic_runner = DeterministicRunner(
-                configuration, currTimeStep, initial_state
-            )
-
-            all_state_begin = deterministic_runner.model.getAllState()
-
-            dynamic_framework = DynamicFramework(
-                deterministic_runner, currTimeStep.nrOfTimeSteps
-            )
-            dynamic_framework.setQuiet(True)
-            dynamic_framework.run()
-
-            all_state_end = deterministic_runner.model.getAllState()
-
-            has_converged = spin_up.checkConvergence(
-                all_state_begin,
-                all_state_end,
-                spinUpRun,
-                deterministic_runner.model.routing.cellArea,
-            )
-
-            initial_state = deterministic_runner.model.getState()
-
-    # run the model (excluding the DA scheme)
-    currTimeStep.getStartEndTimeSteps(
-        configuration.globalOptions["startTime"], configuration.globalOptions["endTime"]
-    )
-    logger.info("Transient simulation run started.")
-    deterministic_runner = DeterministicRunner(
-        configuration, currTimeStep, initial_state
-    )
-    dynamic_framework = DynamicFramework(
-        deterministic_runner, currTimeStep.nrOfTimeSteps
-    )
-    dynamic_framework.setQuiet(True)
-    dynamic_framework.run()
+    run(configuration)
 
 
 if __name__ == "__main__":
-    disclaimer.print_disclaimer(with_logger=True)
     sys.exit(main())

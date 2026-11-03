@@ -11,9 +11,7 @@ class ModelTime(object):
         self._spinUpStatus = False
 
     # TODO: use __init__
-    def getStartEndTimeSteps(
-        self, strStartTime, strEndTime, showNumberOfTimeSteps=True
-    ):
+    def setTransientPeriod(self, strStartTime, strEndTime, showNumberOfTimeSteps=True):
         sd = str(strStartTime).split("-")
         self._startTime = datetime.date(int(sd[0]), int(sd[1]), int(sd[2]))
         ed = str(strEndTime).split("-")
@@ -28,7 +26,7 @@ class ModelTime(object):
         self._annuaIdx = 0
 
     # TODO: use __init__
-    def getStartEndTimeStepsForSpinUp(self, strStartTime, noSpinUp, maxSpinUps):
+    def setSpinUpCycle(self, strStartTime, cycle, maxSpinUps):
         sd = str(strStartTime).split("-")
         self._startTime = datetime.date(int(sd[0]), int(sd[1]), int(sd[2]))
 
@@ -37,7 +35,7 @@ class ModelTime(object):
 
         self._nrOfTimeSteps = 1 + (self.endTime - self.startTime).days
         self._spinUpStatus = True
-        self._noSpinUp = noSpinUp
+        self._spinUpCycle = cycle
         self._maxSpinUps = maxSpinUps
         # monthly index since the start of the simulation
         self._monthIdx = 0
@@ -109,7 +107,7 @@ class ModelTime(object):
         )
 
         if self.spinUpStatus:
-            logger.info(f"Spin-Up {self._noSpinUp} of {self._maxSpinUps}")
+            logger.info(f"Spin-Up {self._spinUpCycle} of {self._maxSpinUps}")
 
         # including hours, minutes, seconds
         self._currTimeFull = datetime.datetime(self.year, self.month, self.day)

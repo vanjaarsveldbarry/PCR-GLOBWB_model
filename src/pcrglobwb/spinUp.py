@@ -14,7 +14,7 @@ class SpinUp(object):
     def __init__(self, iniItems):
         object.__init__(self)
 
-        self.noSpinUps = None
+        self.maxSpinUps = None
 
         # number of soil layers (excluding groundwater)
         self.numberOfLayers = int(
@@ -36,7 +36,7 @@ class SpinUp(object):
 
     def setupConvergence(self, iniItems):
 
-        self.noSpinUps = int(iniItems.globalOptions["maxSpinUpsInYears"])
+        self.maxSpinUps = int(iniItems.globalOptions["maxSpinUpsInYears"])
 
         self.minConvForTotlSto = float(iniItems.globalOptions["minConvForTotlSto"])
         self.minConvForSoilSto = float(iniItems.globalOptions["minConvForSoilSto"])
@@ -103,7 +103,7 @@ class SpinUp(object):
             "Delta SoilStorage = %.2f percent ; SpinUp No. %i of %i",
             convSoilSto,
             spinUpRun,
-            self.noSpinUps,
+            self.maxSpinUps,
         )
 
         beginGwatSto = max(
@@ -129,20 +129,23 @@ class SpinUp(object):
 
         logger.info(f"Delta TotlStorage = {convTotlSto:.2f} percent")
 
-        if self.spinUpOutputDir is not None:
-            logger.info(f"Moving spin-up netcdf files to {self.spinUpOutputDir}")
-
-            # clean up the spin-up directory
-            if os.path.exists(self.spinUpOutputDir):
-                shutil.rmtree(self.spinUpOutputDir)
-            os.makedirs(self.spinUpOutputDir)
-
-            for filename in glob.glob(os.path.join(self.outNCDir, "*.nc")):
-                shutil.move(filename, self.spinUpOutputDir)
-
         return (
             convSoilSto <= self.minConvForSoilSto
             and convGwatSto <= self.minConvForGwatSto
             and convChanSto <= self.minConvForChanSto
             and convTotlSto <= self.minConvForTotlSto
         )
+
+    def archive_netcdf_output(self):
+        if self.spinUpOutputDir is None:
+            return
+
+        logger.info(f"Moving spin-up netcdf files to {self.spinUpOutputDir}")
+
+        # clean up the spin-up directory
+        if os.path.exists(self.spinUpOutputDir):
+            shutil.rmtree(self.spinUpOutputDir)
+        os.makedirs(self.spinUpOutputDir)
+
+        for filename in glob.glob(os.path.join(self.outNCDir, "*.nc")):
+            shutil.move(filename, self.spinUpOutputDir)

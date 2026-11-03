@@ -87,7 +87,7 @@ class Configuration(object):
             self.make_ini_meteo_paths_absolute()
 
     @classmethod
-    def from_arguments(cls, args, system_arguments=None):
+    def from_arguments(cls, args):
         replacements = {
             token: getattr(args, token)
             for token in INI_PLACEHOLDER_FLAGS
@@ -109,16 +109,16 @@ class Configuration(object):
             if options["landmask"] != "None":
                 options["landmask"] = options["landmask"] % args.parallel
 
-        configuration.set_configuration(system_arguments=system_arguments)
+        configuration.set_configuration()
 
         return configuration
 
-    def set_configuration(self, system_arguments=None):
+    def set_configuration(self):
 
         self.set_input_files()
         self.create_output_directories()
 
-        self.initialize_logging("Default", system_arguments)
+        self.initialize_logging("Default")
 
         self.backup_configuration()
 
@@ -144,7 +144,7 @@ class Configuration(object):
     def make_absolute_path(self, path):
         return os.path.normpath(os.path.join(self._cwd, path))
 
-    def initialize_logging(self, log_file_location="Default", system_arguments=None):
+    def initialize_logging(self, log_file_location="Default"):
         """
         Initialize logging. Prints to both the console and a log file, at configurable levels
         """
@@ -244,10 +244,6 @@ class Configuration(object):
             os.environ.get("PCRASTER_NR_WORKER_THREADS", "N/A"),
         )
 
-        if system_arguments is not None:
-            logger.info(
-                "The system arguments given to execute this run: %s", system_arguments
-            )
         for token, value in self.replacements.items():
             logger.info("Ini placeholder %s is set to %s", token, value)
 

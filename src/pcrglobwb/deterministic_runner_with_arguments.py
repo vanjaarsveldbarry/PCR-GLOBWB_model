@@ -18,17 +18,11 @@ logger = logging.getLogger(__name__)
 
 class DeterministicRunner(DynamicModel):
 
-    def __init__(
-        self,
-        configuration,
-        modelTime,
-        initialState=None,
-        spinUpRun=False,
-    ):
+    def __init__(self, configuration, modelTime, initialState=None):
         DynamicModel.__init__(self)
 
         self.modelTime = modelTime
-        self.model = PCRGlobWB(configuration, modelTime, initialState, spinUpRun)
+        self.model = PCRGlobWB(configuration, modelTime, initialState)
         self.reporting = Reporting(configuration, self.model, modelTime)
 
         # the model parameters may be modified
@@ -511,7 +505,7 @@ def main(argv=None):
             )
             logger.info(f"Spin-Up Run No. {spinUpRun}")
             deterministic_runner = DeterministicRunner(
-                configuration, currTimeStep, initial_state, spinUpRun=True
+                configuration, currTimeStep, initial_state
             )
 
             all_state_begin = deterministic_runner.model.getAllState()
@@ -542,7 +536,7 @@ def main(argv=None):
 
     logger.info("Transient simulation run started.")
     deterministic_runner = DeterministicRunner(
-        configuration, currTimeStep, initial_state, spinUpRun=False
+        configuration, currTimeStep, initial_state
     )
 
     dynamic_framework = DynamicFramework(

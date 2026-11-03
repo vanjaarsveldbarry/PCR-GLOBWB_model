@@ -98,8 +98,6 @@ class PCRGlobWB(object):
                 outputDirectory,
             )
 
-    # TODO: implement
-
     def report_summary(
         self,
         landWaterStoresAtBeginning,

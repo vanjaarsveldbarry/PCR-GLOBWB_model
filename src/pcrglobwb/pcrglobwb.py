@@ -33,9 +33,6 @@ class PCRGlobWB(object):
         else:
             self.landmask = pcr.defined(self.lddMap)
 
-        # catchment areas
-        self.catchment_class = 1.0
-
         # number of upper soil layers
         self.numberOfSoilLayers = int(
             configuration.landSurfaceOptions["numberOfUpperSoilLayers"]

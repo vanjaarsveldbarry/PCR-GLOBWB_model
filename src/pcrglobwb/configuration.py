@@ -7,7 +7,7 @@ import os
 import platform
 import shutil
 import sys
-from configparser import RawConfigParser as ConfigParser
+from configparser import ConfigParser, ExtendedInterpolation
 
 from pcrglobwb.common import disclaimer
 from pcrglobwb.common import virtualOS as vos
@@ -24,6 +24,8 @@ class Configuration(object):
         no_modification=True,
         system_arguments=None,
         relative_ini_meteo_paths=False,
+        run_arguments=None,
+        placeholders=None,
     ):
         object.__init__(self)
 
@@ -40,7 +42,7 @@ class Configuration(object):
         # save the cwd; it may be changed later by some utility functions
         self._cwd = os.getcwd()
 
-        self.parse_configuration_file(self.iniFileName)
+        self.parse_configuration_file(self.iniFileName, run_arguments, placeholders)
 
         # option to run in a sandbox with meteo files and initial conditions
         self.using_relative_path_for_output_directory = False
@@ -192,20 +194,49 @@ class Configuration(object):
 
     def backup_configuration(self):
 
-        shutil.copy(
-            self.iniFileName,
+        backup_file_name = (
             self.logFileDir
             + os.path.basename(self.iniFileName)
             + "_"
             + str(self._timestamp.isoformat()).replace(":", ".")
-            + ".ini",
+            + ".ini"
         )
+        with open(backup_file_name, "w") as f:
+            f.write(self.ini_text)
 
-    def parse_configuration_file(self, modelFileName):
+    def parse_configuration_file(
+        self, modelFileName, run_arguments=None, placeholders=None
+    ):
+        """
+        run_arguments become a [runArguments] section, readable in the ini as
+        ${runArguments:<key>}; placeholders are replaced verbatim in the ini text.
+        """
 
-        config = ConfigParser()
+        with open(modelFileName) as f:
+            ini_text = f.read()
+
+        # escaped because the ini is read with ExtendedInterpolation
+        if placeholders is not None:
+            for placeholder, value in placeholders.items():
+                ini_text = ini_text.replace(placeholder, value.replace("$", "$$"))
+            for token in ("START_DATE", "END_DATE"):
+                if token in ini_text:
+                    sys.exit(
+                        f"{modelFileName} uses the placeholder {token}, "
+                        "but no value was given for it"
+                    )
+
+        if run_arguments:
+            ini_text += "\n[runArguments]\n" + "".join(
+                f"{key} = {value.replace('$', '$$')}\n"
+                for key, value in run_arguments.items()
+            )
+
+        self.ini_text = ini_text
+
+        config = ConfigParser(interpolation=ExtendedInterpolation())
         config.optionxform = str
-        config.read(modelFileName)
+        config.read_string(ini_text, source=modelFileName)
 
         self.allSections = config.sections()
 

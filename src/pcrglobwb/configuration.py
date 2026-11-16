@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import shutil
+import subprocess
 import sys
 from configparser import ConfigParser, ExtendedInterpolation
 
@@ -52,8 +53,6 @@ class Configuration(object):
 
         self.initialize_logging(system_arguments)
 
-        self.backup_configuration()
-
         self.repair_ini_key_names()
 
     def initialize_logging(self, system_arguments=None):
@@ -89,13 +88,13 @@ class Configuration(object):
         console_handler.setLevel(console_level)
         logging.getLogger().addHandler(console_handler)
 
-        log_filename = (
+        prefix = (
             self.logFileDir
             + os.path.basename(self.iniFileName)
             + "_"
-            + str(self._timestamp.isoformat()).replace(":", ".")
-            + ".log"
+            + self._timestamp.isoformat().replace(":", ".")
         )
+        log_filename = prefix + ".log"
 
         file_level = getattr(logging, log_level_file.upper(), logging.DEBUG)
         if not isinstance(console_level, int):
@@ -106,15 +105,7 @@ class Configuration(object):
         file_handler.setLevel(file_level)
         logging.getLogger().addHandler(file_handler)
 
-        # debug log file name
-        dbg_filename = (
-            self.logFileDir
-            + os.path.basename(self.iniFileName)
-            + "_"
-            + str(self._timestamp.isoformat()).replace(":", ".")
-            + ".dbg"
-        )
-
+        dbg_filename = prefix + ".dbg"
         debug_handler = logging.FileHandler(dbg_filename)
         debug_handler.setFormatter(formatter)
         debug_handler.setLevel(logging.DEBUG)
@@ -131,15 +122,12 @@ class Configuration(object):
         logger.info(f"OS release: {platform.release()}")
         python_version = str(sys.version)
         logger.info(f"Python version:\n{python_version}")
-        pcraster_check_filename = (
-            self.logFileDir
-            + os.path.basename(self.iniFileName)
-            + "_"
-            + str(self._timestamp.isoformat()).replace(":", ".")
-            + "_pcrcalc_output.txt"
-        )
-        cmd = f"pcrcalc &> {pcraster_check_filename}"
-        os.system(cmd)
+        pcraster_check_filename = prefix + "_pcrcalc_output.txt"
+        with open(pcraster_check_filename, "w") as f:
+            try:
+                subprocess.run(["pcrcalc"], stdout=f, stderr=subprocess.STDOUT)
+            except OSError as e:
+                f.write(f"{e}\n")
         logger.info(
             f"PCRaster version (output from pcrcalc): see the file {pcraster_check_filename}"
         )
@@ -156,16 +144,7 @@ class Configuration(object):
                 f"The system arguments given to execute this run: {system_arguments}"
             )
 
-    def backup_configuration(self):
-
-        backup_file_name = (
-            self.logFileDir
-            + os.path.basename(self.iniFileName)
-            + "_"
-            + str(self._timestamp.isoformat()).replace(":", ".")
-            + ".ini"
-        )
-        with open(backup_file_name, "w") as f:
+        with open(prefix + ".ini", "w") as f:
             f.write(self.ini_text)
 
     def parse_configuration_file(

@@ -234,19 +234,7 @@ class Configuration(object):
             os.chdir(self.mapsDir)
 
         else:
-            # root/parent of the output directory
-            cleanOutputDir = False
-            if cleanOutputDir:
-                try:
-                    shutil.rmtree(self.globalOptions["outputDir"])
-                except Exception:
-                    # new outputDir (does not exist yet)
-                    pass
-            try:
-                os.makedirs(self.globalOptions["outputDir"])
-            except Exception:
-                # new outputDir (does not exist yet)
-                pass
+            os.makedirs(self.globalOptions["outputDir"], exist_ok=True)
 
             self.tmpDir = vos.getFullPath("tmp/", self.globalOptions["outputDir"])
 
@@ -277,8 +265,7 @@ class Configuration(object):
             # TODO: fix this copying (it does not include subfolders)
 
             self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
-            cleanLogDir = True
-            if os.path.exists(self.logFileDir) and cleanLogDir:
+            if os.path.exists(self.logFileDir):
                 shutil.rmtree(self.logFileDir)
             os.makedirs(self.logFileDir)
 
@@ -290,8 +277,7 @@ class Configuration(object):
             os.makedirs(self.endStateDir)
 
             self.mapsDir = vos.getFullPath("maps/", self.globalOptions["outputDir"])
-            cleanMapDir = True
-            if os.path.exists(self.mapsDir) and cleanMapDir:
+            if os.path.exists(self.mapsDir):
                 shutil.rmtree(self.mapsDir)
             os.makedirs(self.mapsDir)
 

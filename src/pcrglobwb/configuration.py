@@ -193,71 +193,33 @@ class Configuration(object):
                 )
 
     def create_output_directories(self):
+        out = self.globalOptions["outputDir"]
+        is_sub_run = self.reportingOptions.get("is_sub_run") == "True"
+        if not is_sub_run:
+            os.makedirs(out, exist_ok=True)
 
-        if (
-            "is_sub_run" in list(self.reportingOptions.keys())
-            and self.reportingOptions["is_sub_run"] == "True"
-        ):
-            self.tmpDir = vos.getFullPath("tmp/", self.globalOptions["outputDir"])
+        dirs = {}
+        for name in ("tmp", "netcdf", "scripts", "log", "states", "maps"):
+            dirs[name] = vos.getFullPath(name + "/", out)
+            if not is_sub_run:
+                if os.path.exists(dirs[name]):
+                    shutil.rmtree(dirs[name])
+                os.makedirs(dirs[name])
 
-            self.outNCDir = vos.getFullPath("netcdf/", self.globalOptions["outputDir"])
+        if not is_sub_run:
+            # does not include subfolders
+            here = os.path.dirname(os.path.abspath(__file__))
+            for filename in glob.glob(os.path.join(here, "*.py")):
+                shutil.copy(filename, dirs["scripts"])
 
-            self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
+        self.tmpDir = dirs["tmp"]
+        self.outNCDir = dirs["netcdf"]
+        self.logFileDir = dirs["log"]
+        self.endStateDir = dirs["states"]
+        self.mapsDir = dirs["maps"]
 
-            self.endStateDir = vos.getFullPath(
-                "states/", self.globalOptions["outputDir"]
-            )
-
-            self.mapsDir = vos.getFullPath("maps/", self.globalOptions["outputDir"])
-
-            # go to the PCRaster maps directory (so all pcr.report files are saved there)
-            os.chdir(self.mapsDir)
-
-        else:
-            os.makedirs(self.globalOptions["outputDir"], exist_ok=True)
-
-            self.tmpDir = vos.getFullPath("tmp/", self.globalOptions["outputDir"])
-
-            if os.path.exists(self.tmpDir):
-                shutil.rmtree(self.tmpDir)
-            os.makedirs(self.tmpDir)
-
-            self.outNCDir = vos.getFullPath("netcdf/", self.globalOptions["outputDir"])
-            if os.path.exists(self.outNCDir):
-                shutil.rmtree(self.outNCDir)
-            os.makedirs(self.outNCDir)
-
-            # backup of the Python scripts used
-            script_dir = vos.getFullPath("scripts/", self.globalOptions["outputDir"])
-
-            if os.path.exists(script_dir):
-                shutil.rmtree(script_dir)
-            os.makedirs(script_dir)
-
-            path_of_this_module = os.path.abspath(os.path.dirname(__file__))
-            for filename in glob.glob(os.path.join(path_of_this_module, "*.py")):
-                shutil.copy(filename, script_dir)
-            # TODO: fix this copying (it does not include subfolders)
-
-            self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
-            if os.path.exists(self.logFileDir):
-                shutil.rmtree(self.logFileDir)
-            os.makedirs(self.logFileDir)
-
-            self.endStateDir = vos.getFullPath(
-                "states/", self.globalOptions["outputDir"]
-            )
-            if os.path.exists(self.endStateDir):
-                shutil.rmtree(self.endStateDir)
-            os.makedirs(self.endStateDir)
-
-            self.mapsDir = vos.getFullPath("maps/", self.globalOptions["outputDir"])
-            if os.path.exists(self.mapsDir):
-                shutil.rmtree(self.mapsDir)
-            os.makedirs(self.mapsDir)
-
-            # go to the PCRaster maps directory (so all pcr.report files are saved there)
-            os.chdir(self.mapsDir)
+        # so all pcr.report files are saved there
+        os.chdir(self.mapsDir)
 
     def repair_ini_key_names(self):
         """

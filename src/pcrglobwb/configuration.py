@@ -24,7 +24,6 @@ class Configuration(object):
         debug_mode=False,
         system_arguments=None,
         run_arguments=None,
-        placeholders=None,
     ):
         object.__init__(self)
 
@@ -38,7 +37,7 @@ class Configuration(object):
 
         self.debug_mode = debug_mode
 
-        self.parse_configuration_file(self.iniFileName, run_arguments, placeholders)
+        self.parse_configuration_file(self.iniFileName, run_arguments)
         self.create_output_directories()
         self.initialize_logging(system_arguments)
         self.repair_ini_key_names()
@@ -135,30 +134,18 @@ class Configuration(object):
         with open(prefix + ".ini", "w") as f:
             f.write(self.ini_text)
 
-    def parse_configuration_file(
-        self, modelFileName, run_arguments=None, placeholders=None
-    ):
+    def parse_configuration_file(self, modelFileName, run_arguments=None):
         """
         run_arguments become a [runArguments] section, readable in the ini as
-        ${runArguments:<key>}; placeholders are replaced verbatim in the ini text.
+        ${runArguments:<key>}.
         """
 
         with open(modelFileName) as f:
             ini_text = f.read()
 
-        # escaped because the ini is read with ExtendedInterpolation
-        if placeholders is not None:
-            for placeholder, value in placeholders.items():
-                ini_text = ini_text.replace(placeholder, value.replace("$", "$$"))
-            for token in ("START_DATE", "END_DATE"):
-                if token in ini_text:
-                    sys.exit(
-                        f"{modelFileName} uses the placeholder {token}, "
-                        "but no value was given for it"
-                    )
-
         if run_arguments:
             ini_text += "\n[runArguments]\n" + "".join(
+                # escaped because the ini is read with ExtendedInterpolation
                 f"{key} = {value.replace('$', '$$')}\n"
                 for key, value in run_arguments.items()
             )

@@ -350,27 +350,16 @@ class LandSurface(object):
                 "water_quality",
             ]
             groups = []
-            subst_args = []
 
-            # the placeholders in the QUAlloc cfg are filled from this ini, which run-with-arguments has
-            # already substituted with the same values, so both models are driven by one set of arguments
-            replacements = {}
-            for token, option in [
-                ("MAIN_INPUT_DIR", "main_input_dir_for_qualloc"),
-                ("MAIN_OUTPUT_DIR", "main_output_dir_for_qualloc"),
-                ("CLONEMAP", "clonemap_for_qualloc"),
-            ]:
-                if option in iniItems.waterManagementOptions:
-                    replacements[token] = iniItems.waterManagementOptions[option]
-            replacements["START_YEAR"] = iniItems.globalOptions["startTime"][0:4]
-            replacements["END_YEAR"] = iniItems.globalOptions["endTime"][0:4]
+            run_arguments = dict(getattr(iniItems, "runArguments", {}))
+            run_arguments["startYear"] = iniItems.globalOptions["startTime"][0:4]
+            run_arguments["endYear"] = iniItems.globalOptions["endTime"][0:4]
 
             self.qualloc_model_configuration = configuration_parser(
                 cfgfilename=qualloc_config_file,
                 sections=sections,
                 groups=groups,
-                subst_args=subst_args,
-                replacements=replacements,
+                run_arguments=run_arguments,
             )
 
             time_increment = "daily"

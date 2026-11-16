@@ -1,11 +1,10 @@
 import datetime
 import logging
 import os
-import re
 import shutil
 import stat
 import sys
-from configparser import RawConfigParser as ConfigParser
+from configparser import ConfigParser, ExtendedInterpolation
 
 from qualloc.basic_functions import convert_string_to_list, get_decision
 
@@ -13,19 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 NoneType = type(None)
-
-# placeholders that the calling program replaces in the configuration file; they
-# match the tokens PCR-GLOBWB's run-with-arguments substitutes in its ini files,
-# so a cfg and an ini can be driven by the same arguments
-substitutable_tokens = [
-    "MAIN_INPUT_DIR",
-    "MAIN_OUTPUT_DIR",
-    "CLONEMAP",
-    "START_YEAR",
-    "END_YEAR",
-]
-
-token_pattern = re.compile(rf"\b({str.join('|', substitutable_tokens)})\b")
 
 
 def remove_readonly(func, path, _):
@@ -56,8 +42,7 @@ the CALEROS model.
         sections=[],
         groups=[],
         debug_mode=False,
-        subst_args=[],
-        replacements={},
+        run_arguments=None,
         **optional_arguments,
     ):
 
@@ -79,12 +64,8 @@ the CALEROS model.
         # save the initial root for later use
         self.start_root_path = os.path.abspath(os.path.dirname(__file__))
 
-        # substitute tokens before parsing so every value is covered, including those
-        # in the optional sections and groups
-        self.cfg_content = self.substitute_tokens(self.cfgfilename, replacements)
-
         self.parse_configuration_file(
-            self.cfgfilename, self.groups, self.sections, subst_args
+            self.cfgfilename, self.groups, self.sections, run_arguments
         )
 
         # the log files live in the output directories, so messages raised while
@@ -120,55 +101,37 @@ the CALEROS model.
             options[key] = value
         return options
 
-    def substitute_tokens(self, cfgfilename, replacements):
+    def parse_configuration_file(self, cfgfilename, groups, sections, run_arguments):
         """
-
-substitute_tokens: function that returns the contents of the configuration file \
-with each of the substitutable tokens replaced by the value the calling program \
-passed for it. Halts the run if the file uses a token that was not passed, as \
-the unreplaced token would otherwise surface much later as a missing file.
-
-"""
+        run_arguments become a [runArguments] section, readable in the cfg as
+        ${runArguments:<key>}.
+        """
 
         with open(cfgfilename) as cfgfile:
             cfg_content = cfgfile.read()
 
-        missing_tokens = sorted(
-            set(token_pattern.findall(cfg_content)) - set(replacements.keys())
-        )
-
-        if missing_tokens:
-            sys.exit(
-                f"configuration file {cfgfilename} uses the placeholder(s) "
-                f"{', '.join(missing_tokens)}, for which no value was passed"
+        if run_arguments:
+            cfg_content += "\n[runArguments]\n" + "".join(
+                # escaped because the cfg is read with ExtendedInterpolation
+                f"{key} = {value.replace('$', '$$')}\n"
+                for key, value in run_arguments.items()
             )
 
-        return token_pattern.sub(
-            lambda match: replacements[match.group(1)], cfg_content
-        )
+        self.cfg_content = cfg_content
 
-    def parse_configuration_file(self, cfgfilename, groups, sections, subst_args):
-
-        config = ConfigParser()
+        config = ConfigParser(interpolation=ExtendedInterpolation())
         config.optionxform = str
-        config.read_string(self.cfg_content)
+        config.read_string(cfg_content, source=cfgfilename)
         sections_present = config.sections()
+        if run_arguments:
+            sections_present.remove("runArguments")
         # process the single, preset sections first
         for section in sections:
             # check whether the section exists (compulsory for the model parameterization)
             if config.has_section(section):
                 sections_present.remove(section)
                 try:
-                    section_info = self.get_items(config, section)
-                    for key, value in section_info.items():
-                        if "$" in value:
-                            argposcnt = value.find("$")
-                            argpos = int(value[argposcnt + 1 :]) - 1
-                            value = str.join(
-                                "", (value[:argposcnt], subst_args[argpos])
-                            )
-                            section_info[key] = value
-                    setattr(self, section, section_info)
+                    setattr(self, section, self.get_items(config, section))
                 except Exception:
                     sys.exit(
                         f"processing information on the compulsory section [{section}] raised an error"
@@ -199,15 +162,6 @@ the unreplaced token would otherwise surface much later as a missing file.
                     section = section.replace(" ", "")
                     # miscellaneous section
                     section_info = self.get_items(config, section)
-                for key, value in section_info.items():
-                    if "$" in value:
-                        try:
-                            value = subst_args[int(value.lstrip("$")) - 1]
-                        except (ValueError, IndexError):
-                            sys.exit(
-                                f"argument substitution failed on {key} in optional section {section}"
-                            )
-                        section_info[key] = value
                 setattr(self, section, section_info)
 
             except Exception:

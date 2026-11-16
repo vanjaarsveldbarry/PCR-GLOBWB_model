@@ -39,7 +39,6 @@ class Configuration(object):
         self.debug_mode = debug_mode
 
         self.parse_configuration_file(self.iniFileName, run_arguments, placeholders)
-        self.set_input_files()
         self.create_output_directories()
         self.initialize_logging(system_arguments)
         self.repair_ini_key_names()
@@ -179,17 +178,12 @@ class Configuration(object):
                 val = config.get(sec, opt)
                 self.__getattribute__(sec)[opt] = val
 
-    def set_input_files(self):
-        self.cloneMap = vos.getFullPath(
-            self.globalOptions["cloneMap"], self.globalOptions["inputDir"]
-        )
-
-        # full paths of the input directories/files
-        dirsAndFiles = ["precipitationNC", "temperatureNC", "refETPotFileNC"]
-        for item in dirsAndFiles:
+        input_dir = self.globalOptions["inputDir"]
+        self.cloneMap = vos.getFullPath(self.globalOptions["cloneMap"], input_dir)
+        for item in ("precipitationNC", "temperatureNC", "refETPotFileNC"):
             if self.meteoOptions[item] != "None":
                 self.meteoOptions[item] = vos.getFullPath(
-                    self.meteoOptions[item], self.globalOptions["inputDir"]
+                    self.meteoOptions[item], input_dir
                 )
 
     def create_output_directories(self):

@@ -22,7 +22,6 @@ class Configuration(object):
         self,
         iniFileName,
         debug_mode=False,
-        no_modification=True,
         system_arguments=None,
         run_arguments=None,
         placeholders=None,
@@ -40,19 +39,9 @@ class Configuration(object):
         self.debug_mode = debug_mode
 
         self.parse_configuration_file(self.iniFileName, run_arguments, placeholders)
-
-        # if no_modification, set the configuration directly (creates the output, tmp, etc.
-        # directories); otherwise set_configuration must be called separately
-        if no_modification:
-            self.set_configuration(system_arguments)
-
-    def set_configuration(self, system_arguments=None):
-
         self.set_input_files()
         self.create_output_directories()
-
         self.initialize_logging(system_arguments)
-
         self.repair_ini_key_names()
 
     def initialize_logging(self, system_arguments=None):

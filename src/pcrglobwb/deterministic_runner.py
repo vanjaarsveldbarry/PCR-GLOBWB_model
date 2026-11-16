@@ -50,20 +50,7 @@ def main():
         if sys.argv[2] == "debug":
             debug_mode = True
 
-    # use the ini file as given
-    no_modification = True
-
-    # use the output directory given as a command-line argument
-    if len(sys.argv) > 3 and sys.argv[3] == "--output_dir":
-        no_modification = False
-        output_directory = sys.argv[4]
-
-    configuration = Configuration(
-        iniFileName=iniFileName, debug_mode=debug_mode, no_modification=no_modification
-    )
-    if not no_modification:
-        configuration.globalOptions["outputDir"] = output_directory
-        configuration.set_configuration()
+    configuration = Configuration(iniFileName=iniFileName, debug_mode=debug_mode)
 
     # time step info: year, month, day, doy, etc.
     currTimeStep = ModelTime()

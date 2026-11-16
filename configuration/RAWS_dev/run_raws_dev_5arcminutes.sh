@@ -28,22 +28,22 @@ pixi run --manifest-path "$REPO_ROOT/pixi.toml" \
 # ---------------------------------------------------------------------------
 # 1/2 PCR-GLOBWB on its own
 # ---------------------------------------------------------------------------
-pixi run --manifest-path "$REPO_ROOT/pixi.toml" pcrglobwb-run-with-arguments \
+pixi run --manifest-path "$REPO_ROOT/pixi.toml" pcrglobwb-run \
     "$REPO_ROOT/configuration/run_with_args/pcrglobwb/pcrglobwb_5arcminutes.ini" \
-    -mod "$DATA_DIR/output/5arcminutes/pcrglobwb" \
-    -mid "$INPUT_DIR" \
-    -clonemap "$CLONE_MAP" \
-    -sd "$START_DATE" \
-    -ed "$END_DATE"
+    --mod "$DATA_DIR/output/5arcminutes/pcrglobwb" \
+    --mid "$INPUT_DIR" \
+    --clonemap "$CLONE_MAP" \
+    --sd "$START_DATE" \
+    --ed "$END_DATE"
 
 # ---------------------------------------------------------------------------
 # 2/2 QUAlloc stepped from inside PCR-GLOBWB
 # ---------------------------------------------------------------------------
-pixi run --manifest-path "$REPO_ROOT/pixi.toml" pcrglobwb-run-with-arguments \
+pixi run --manifest-path "$REPO_ROOT/pixi.toml" pcrglobwb-run \
     "$REPO_ROOT/configuration/run_with_args/online_pcrglobwb_qualloc/online_pcrglobwb_qualloc_5arcminutes.ini" \
-    -mod "$DATA_DIR/output/5arcminutes/online_pcrglobwb_qualloc" \
-    -mid "$INPUT_DIR" \
-    -clonemap "$CLONE_MAP" \
-    -sd "$START_DATE" \
-    -ed "$END_DATE" \
-    -qcf "$REPO_ROOT/configuration/run_with_args/online_pcrglobwb_qualloc/qualloc_5arcminutes.cfg"
+    --mod "$DATA_DIR/output/5arcminutes/online_pcrglobwb_qualloc" \
+    --mid "$INPUT_DIR" \
+    --clonemap "$CLONE_MAP" \
+    --sd "$START_DATE" \
+    --ed "$END_DATE" \
+    --qcf "$REPO_ROOT/configuration/run_with_args/online_pcrglobwb_qualloc/qualloc_5arcminutes.cfg"

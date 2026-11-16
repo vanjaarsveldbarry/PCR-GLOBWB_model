@@ -213,15 +213,6 @@ class Configuration(object):
 
             self.outNCDir = vos.getFullPath("netcdf/", self.globalOptions["outputDir"])
 
-            # backup of the Python scripts used
-            self.scriptDir = vos.getFullPath(
-                "scripts/", self.globalOptions["outputDir"]
-            )
-
-            # starting directory where all scripts are stored
-            path_of_this_module = os.path.abspath(os.path.dirname(__file__))
-            self.starting_directory = path_of_this_module
-
             self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
 
             self.endStateDir = vos.getFullPath(
@@ -248,20 +239,15 @@ class Configuration(object):
             os.makedirs(self.outNCDir)
 
             # backup of the Python scripts used
-            self.scriptDir = vos.getFullPath(
-                "scripts/", self.globalOptions["outputDir"]
-            )
+            script_dir = vos.getFullPath("scripts/", self.globalOptions["outputDir"])
 
-            if os.path.exists(self.scriptDir):
-                shutil.rmtree(self.scriptDir)
-            os.makedirs(self.scriptDir)
+            if os.path.exists(script_dir):
+                shutil.rmtree(script_dir)
+            os.makedirs(script_dir)
 
-            # starting directory where all scripts are stored
             path_of_this_module = os.path.abspath(os.path.dirname(__file__))
-            self.starting_directory = path_of_this_module
-
             for filename in glob.glob(os.path.join(path_of_this_module, "*.py")):
-                shutil.copy(filename, self.scriptDir)
+                shutil.copy(filename, script_dir)
             # TODO: fix this copying (it does not include subfolders)
 
             self.logFileDir = vos.getFullPath("log/", self.globalOptions["outputDir"])
